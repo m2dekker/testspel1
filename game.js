@@ -1304,8 +1304,19 @@
     render();
   }
 
-  function restart() {
-    if (!confirm('start over? everything will be forgotten.')) return;
+  // Restart needs two clicks within a few seconds (no confirm() dialogs).
+  function restart(e) {
+    const btn = e.currentTarget;
+    if (!btn.dataset.armed) {
+      btn.dataset.armed = '1';
+      btn.dataset.label = btn.textContent;
+      btn.textContent = 'sure? click again';
+      setTimeout(() => {
+        delete btn.dataset.armed;
+        btn.textContent = btn.dataset.label;
+      }, 3000);
+      return;
+    }
     resetting = true;
     try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ }
     location.reload();
