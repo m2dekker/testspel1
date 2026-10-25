@@ -290,3 +290,45 @@ joined_at
 ```
 
 > **Note:** the document as received ends here. Any later sections still need to be added.
+
+---
+
+## 8. Direction Update (25 Oct 2026): Sail and Capture
+
+**Why:** the haven-only loop (tap, wait) is not fun on its own. Players want to *sail*.
+The game becomes two halves that feed each other:
+
+- **At sea (action):** steer your own ship in real time across a procedurally generated
+  archipelago, scout islands, fight forts, and capture islands.
+- **At home (strategy):** the haven economy from Sprints 1–2. Captured islands supply
+  resources; the haven turns them into better ships, crew and research.
+
+### Core sea loop
+1. Sail out. Islands appear on the world map as you pass them (fog of war).
+2. Get close and use the spyglass to see who holds an island: **Unclaimed**, an NPC
+   faction (**Black Tide Raiders**, **Crown Navy**) or, later, another player.
+3. The owner is revealed **before** you are inside their fort's cannon range, so you
+   always get the chance to retreat.
+4. Silence the fort with broadsides, slow down, and land your crew to capture it.
+5. Captured islands produce their resource for you, also while you are offline.
+
+### World generation
+- Every world is generated from a **seed**. The same seed always gives the same islands
+  (positions, shapes, names, owners, resources, fort strength).
+- Multiple worlds later = multiple seeds (one row per world in a `worlds` table).
+- Safer waters near the home island; stronger factions further out.
+
+### Prototype
+`prototypes/sailing/index.html` is a playable single-file test of this loop (plain JS
+canvas, open it in a browser). It proves the feel before it is rebuilt in the app.
+
+### Open questions for the real build
+- **Engine:** the sea view needs a game loop. Plan: Flame (Flutter's 2D game engine)
+  inside the existing app, so the haven screens stay as they are.
+- **World data:** generate each world once on the server from its seed and store the
+  islands, rather than generating on every client.
+- **Cheating in real-time fights:** the server cannot simulate every cannonball. MVP:
+  fights against NPC forts are simulated on the device, and the server checks that a
+  capture is plausible (ship was near, enough time passed, fort strength vs. ship).
+- **Player vs player:** islands held by other players are defended by their fort while
+  they are offline (asynchronous). Live ship-to-ship PvP comes later, if at all.

@@ -3,7 +3,9 @@
 A mobile-first Flutter + Supabase pirate strategy game, inspired by Ikariam.
 
 - Full design: `docs/DESIGN.md` (single source of truth for features and scope)
-- Sprints: `docs/SPRINT-1.md` (done), `docs/SPRINT-2.md` (current)
+- Sprints: `docs/SPRINT-1.md` (done), `docs/SPRINT-2.md` (done)
+- Direction update (sailing and capturing islands): `docs/DESIGN.md` section 8
+- Sailing prototype: `prototypes/sailing/index.html`
 
 ## Instructions for Claude
 
@@ -17,7 +19,8 @@ A mobile-first Flutter + Supabase pirate strategy game, inspired by Ikariam.
 
 ## Current focus
 
-Sprint 2: crew, jobs, Tavern, Academy and the Economy research tree.
+Proving the sailing loop (seeded world, scouting, forts, capture) with the prototype,
+then bringing it into the app.
 
 ## Architecture rules
 
