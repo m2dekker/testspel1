@@ -4,17 +4,24 @@ A mobile-first pirate strategy game (Flutter + Supabase), inspired by Ikariam.
 Build a haven, produce resources, and (soon) trade and raid across the isles.
 
 - Design and MVP scope: [`docs/DESIGN.md`](docs/DESIGN.md)
-- Current sprint: [`docs/SPRINT-1.md`](docs/SPRINT-1.md)
+- Sprints: [`docs/SPRINT-1.md`](docs/SPRINT-1.md), [`docs/SPRINT-2.md`](docs/SPRINT-2.md)
 
-## Status: Sprint 1
+## Status
+
+**Sprint 1: done.** Log in (email + Google), get a haven, build and upgrade with
+timers, resources grow (also offline), everything persists.
+
+**Sprint 2: done.** Crew and research:
 
 | Definition of Done | Status |
 |---|---|
-| User can register / log in (email + Google) | ✅ |
-| User sees their haven | ✅ |
-| User can build at least 3 different buildings | ✅ Lumber Camp, Plantation, Warehouse |
-| Resources increase over time (also while offline) | ✅ |
-| Data persists after refresh | ✅ |
+| Crew grows over time (also offline) and stops at the housing cap | ✅ |
+| Assign and remove workers; production follows the number of workers | ✅ |
+| Idle crew produce gold | ✅ |
+| Build a Tavern (faster crew growth) and an Academy (research points) | ✅ |
+| Research all 4 Economy techs, and their bonuses apply | ✅ |
+| See who else lives on your island | ✅ |
+| Enforced by the server and covered by tests | ✅ |
 
 ## How it works
 
@@ -40,9 +47,9 @@ flutter run -d chrome
 ### 2. With Supabase (real accounts and multiplayer-ready data)
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Run the migration: paste
-   `supabase/migrations/20261024000000_sprint1_havens.sql` into the **SQL Editor**
-   and run it (or use `supabase db push` with the Supabase CLI).
+2. Run the migrations in order: paste each file from `supabase/migrations/`
+   (oldest first) into the **SQL Editor** and run it, or use `supabase db push`
+   with the Supabase CLI.
 3. Create `app/env.json` (it's git-ignored):
 
    ```json

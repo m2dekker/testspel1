@@ -14,6 +14,9 @@ IconData resourceIcon(Resource r) => switch (r) {
   Resource.gold => Icons.paid,
 };
 
+const crewIcon = Icons.groups;
+const researchIcon = Icons.auto_stories;
+
 String resourceLabel(Resource r) => switch (r) {
   Resource.timber => 'Timber',
   Resource.rum => 'Rum',
@@ -28,6 +31,8 @@ IconData buildingIcon(String type) => switch (type) {
   'lumber_camp' => Icons.carpenter,
   'plantation' => Icons.agriculture,
   'warehouse' => Icons.warehouse,
+  'tavern' => Icons.sports_bar,
+  'academy' => Icons.school,
   _ => Icons.home_work,
 };
 
@@ -40,18 +45,21 @@ String formatDuration(Duration d) {
   return '${s}s';
 }
 
-/// What a building produces, in words, e.g. "+300 timber / hour".
-String productionText(
-  String? produces,
-  double perHour,
-  Resource luxury, {
-  int storage = 0,
-}) {
-  final n = perHour.round();
-  return switch (produces) {
-    'timber' => '+$n timber / hour',
-    'luxury' => '+$n ${resourceLabel(luxury).toLowerCase()} / hour',
-    'gold' => '+$n gold / hour',
-    _ => storage > 0 ? '+$storage storage' : '',
-  };
-}
+/// Name of what a building produces, e.g. "timber", "spice", "research".
+String productName(String? produces, Resource luxury) => switch (produces) {
+  'timber' => 'timber',
+  'luxury' => resourceLabel(luxury).toLowerCase(),
+  'research' => 'research',
+  _ => '',
+};
+
+/// What one level of a building gives, in short lines, e.g.
+/// ["8 jobs · 40 timber/h each"] or ["Houses 20 crew"].
+List<String> effectLines(BuildingEffect e, Resource luxury) => [
+  if (e.workers > 0)
+    '${e.workers} jobs · ${e.workerRate.round()} '
+        '${productName(e.produces, luxury)}/h each',
+  if (e.crewCap > 0) 'Houses ${e.crewCap} crew',
+  if (e.growth > 0) '+${e.growth.round()} crew arriving per hour',
+  if (e.storage > 0) '+${e.storage} storage',
+];

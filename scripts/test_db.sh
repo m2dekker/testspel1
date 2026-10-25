@@ -39,9 +39,9 @@ fi
 
 run() {
   echo "→ $1"
-  "${PSQL[@]}" -v ON_ERROR_STOP=1 -q -f - < "$ROOT/$1"
+  "${PSQL[@]}" -v ON_ERROR_STOP=1 -q -o /dev/null -f - < "$ROOT/$1"
 }
 
 run supabase/tests/00_supabase_stub.sql
 for f in supabase/migrations/*.sql; do run "$f"; done
-run supabase/tests/10_game_rules_test.sql
+for f in supabase/tests/[1-9]*_test.sql; do run "$f"; done

@@ -6,13 +6,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../domain/models.dart';
 import 'game_backend.dart';
 
-/// Offline demo: runs the Sprint 1 game rules on the device and saves the
-/// haven in local storage. Used when no Supabase project is configured
-/// (for example in the shareable web preview).
+/// Offline demo: runs the game rules on the device and saves the haven in
+/// local storage. Used when no Supabase project is configured (for example in
+/// a quick preview).
 ///
-/// KEEP IN SYNC with supabase/migrations/*_sprint1_havens.sql. The rules,
-/// numbers and error messages here mirror the SQL functions one to one, and
-/// [_stateJson] returns the same JSON shape as `haven_state()`.
+/// KEEP IN SYNC with supabase/migrations/. The rules, numbers and error
+/// messages here mirror the SQL functions one to one, [_stateJson] returns the
+/// same JSON shape as `haven_state()`, and test/demo_game_backend_test.dart
+/// mirrors the SQL tests.
 class DemoGameBackend implements GameBackend {
   DemoGameBackend(this._prefs, {DateTime Function()? clock, Random? random})
     : _clock = clock ?? DateTime.now,
@@ -23,23 +24,29 @@ class DemoGameBackend implements GameBackend {
   final Random _random;
 
   static const storageKey = 'blackwake_demo_haven_v1';
+
+  /// Name used for the demo haven (set by the demo login).
+  static const captainKey = 'blackwake_demo_captain';
+
+  // Mirrors haven_plots(), base_storage(), base_crew_growth(), gold_per_idle_crew().
   static const _plots = 8;
   static const _baseStorage = 1500;
+  static const _baseCrewGrowth = 12.0;
+  static const _goldPerIdleCrew = 4.0;
 
-  // Mirrors the building_types seed data.
+  // Mirrors the building_types rows.
   static const _types = <_Type>[
     _Type(
       'captains_quarters',
       'Captain\'s Quarters',
-      'The heart of your haven. Idle crew loaf about here and earn a little gold.',
+      'The heart of your haven. Houses your crew. Crew without a job earn gold.',
       buildable: false,
       timber: 150,
       gold: 50,
       costGrowth: 1.7,
       seconds: 30,
       timeGrowth: 1.6,
-      produces: 'gold',
-      rate: 30,
+      crewPerLevel: 20,
     ),
     _Type(
       'lumber_camp',
@@ -48,7 +55,8 @@ class DemoGameBackend implements GameBackend {
       timber: 60,
       seconds: 15,
       produces: 'timber',
-      rate: 300,
+      workerRate: 40,
+      workersPerLevel: 8,
     ),
     _Type(
       'plantation',
@@ -58,7 +66,8 @@ class DemoGameBackend implements GameBackend {
       gold: 20,
       seconds: 20,
       produces: 'luxury',
-      rate: 120,
+      workerRate: 15,
+      workersPerLevel: 6,
     ),
     _Type(
       'warehouse',
@@ -67,6 +76,66 @@ class DemoGameBackend implements GameBackend {
       timber: 80,
       seconds: 20,
       storage: 1500,
+    ),
+    _Type(
+      'tavern',
+      'Tavern',
+      'Grog, songs and gossip. A lively tavern draws new crew to your haven faster.',
+      timber: 120,
+      gold: 40,
+      seconds: 25,
+      growthPerLevel: 12,
+    ),
+    _Type(
+      'academy',
+      'Academy',
+      'Scholars study charts and ledgers here and produce research points.',
+      timber: 150,
+      gold: 50,
+      seconds: 30,
+      produces: 'research',
+      workerRate: 10,
+      workersPerLevel: 6,
+    ),
+  ];
+
+  // Mirrors the techs rows.
+  static const _techs = <_Tech>[
+    _Tech(
+      'sharpened_axes',
+      'Sharpened Axes',
+      'Lumberjacks fell trees 20% faster.',
+      20,
+      null,
+      'timber_bonus',
+      0.2,
+    ),
+    _Tech(
+      'bonded_warehouses',
+      'Bonded Warehouses',
+      'Stack the crates higher: 50% more storage.',
+      60,
+      'sharpened_axes',
+      'storage_bonus',
+      0.5,
+    ),
+    _Tech(
+      'plantation_overseers',
+      'Plantation Overseers',
+      'Plantations produce 20% more.',
+      120,
+      'bonded_warehouses',
+      'luxury_bonus',
+      0.2,
+    ),
+    _Tech(
+      'ships_ledger',
+      'Ship\'s Ledger',
+      'Idle crew earn 50% more gold.',
+      240,
+      'plantation_overseers',
+      'idle_gold_bonus',
+      0.5,
     ),
   ];
 
@@ -77,9 +146,6 @@ class DemoGameBackend implements GameBackend {
     {'id': 3, 'name': 'Hangman\'s Reef', 'x': 41, 'y': 22, 'luxury': 'iron'},
     {'id': 4, 'name': 'Isla de Seda', 'x': 58, 'y': 14, 'luxury': 'silk'},
   ];
-
-  /// Name used for the demo haven (set by the demo login).
-  static const captainKey = 'blackwake_demo_captain';
 
   // ------------------------------------------------------------------ API
 
@@ -101,6 +167,9 @@ class DemoGameBackend implements GameBackend {
           'silk': 0,
           'gold': 100,
         },
+        crew: 6,
+        researchPoints: 0,
+        techs: {},
         updatedAt: _clock(),
         buildings: [_B(id: 1, type: 'captains_quarters', slot: 0, level: 1)],
         nextId: 2,
@@ -168,6 +237,78 @@ class DemoGameBackend implements GameBackend {
     return _commit(save, settle: false);
   }
 
+  /// Mirrors assign_workers().
+  @override
+  Future<HavenState> assignWorkers(int buildingId, int workers) async {
+    final save = _require();
+    _settle(save);
+
+    final b = save.buildings.where((b) => b.id == buildingId).firstOrNull;
+    if (b == null) throw GameException('That building isn\'t in your haven.');
+    final type = _typeOrNull(b.type)!;
+    if (type.workersPerLevel == 0) {
+      throw GameException('Nobody can work at the ${type.name}.');
+    }
+    if (b.level == 0) {
+      throw GameException('The ${type.name} isn\'t finished yet.');
+    }
+    final jobs = type.workersPerLevel * b.level;
+    if (workers < 0 || workers > jobs) {
+      throw GameException('The ${type.name} has jobs for $jobs crew.');
+    }
+    final others = save.buildings
+        .where((o) => o.id != buildingId)
+        .fold<int>(0, (sum, o) => sum + o.workers);
+    if (others + workers > save.crew.floor()) {
+      throw GameException(
+        'Not enough crew (${max(0, save.crew.floor() - others)} free).',
+      );
+    }
+
+    b.workers = workers;
+    return _commit(save, settle: false);
+  }
+
+  /// Mirrors research_tech().
+  @override
+  Future<HavenState> research(String techId) async {
+    final save = _require();
+    _settle(save);
+
+    final t = _techs.where((t) => t.id == techId).firstOrNull;
+    if (t == null) throw GameException('Unknown research.');
+    if (save.techs.contains(techId)) {
+      throw GameException('You already know ${t.name}.');
+    }
+    if (t.requires != null && !save.techs.contains(t.requires)) {
+      final req = _techs.firstWhere((r) => r.id == t.requires);
+      throw GameException('Research ${req.name} first.');
+    }
+    if (save.researchPoints < t.cost) {
+      throw GameException(
+        'Not enough research points (need ${t.cost}, have ${save.researchPoints.floor()}).',
+      );
+    }
+
+    save.researchPoints -= t.cost;
+    save.techs.add(techId);
+    return _commit(save, settle: false);
+  }
+
+  /// In the offline demo you are alone on your island.
+  @override
+  Future<List<Neighbour>> neighbours() async {
+    final save = _require();
+    return [
+      Neighbour(
+        haven: save.name,
+        captain: _prefs.getString(captainKey) ?? 'Captain',
+        slot: 0,
+        isYou: true,
+      ),
+    ];
+  }
+
   // ---------------------------------------------------------------- rules
 
   /// Mirrors settle_haven(): production in segments, completing each
@@ -200,32 +341,69 @@ class DemoGameBackend implements GameBackend {
     final r = _rates(s);
     final lux = s.island['luxury'] as String;
 
+    // Crew grows linearly until it reaches the cap.
+    final crewNow = s.crew;
+    double crewEnd, crewHours;
+    if (crewNow >= r.crewCap || r.crewGrowth <= 0) {
+      crewEnd = crewNow;
+      crewHours = crewNow * hours;
+    } else {
+      final tCap = (r.crewCap - crewNow) / r.crewGrowth;
+      if (hours <= tCap) {
+        crewEnd = crewNow + r.crewGrowth * hours;
+        crewHours = (crewNow + crewEnd) / 2 * hours;
+      } else {
+        crewEnd = r.crewCap;
+        crewHours =
+            (crewNow + r.crewCap) / 2 * tCap + r.crewCap * (hours - tCap);
+      }
+    }
+
     double fill(double cur, double add) => max(cur, min(r.capacity, cur + add));
     s.resources['timber'] = fill(s.resources['timber']!, r.timber * hours);
     s.resources[lux] = fill(s.resources[lux]!, r.luxury * hours);
-    s.resources['gold'] = s.resources['gold']! + r.gold * hours;
+    s.researchPoints += r.research * hours;
+    s.resources['gold'] =
+        s.resources['gold']! +
+        r.goldPerIdle * max(0, crewHours - r.assigned * hours);
+    s.crew = crewEnd;
   }
+
+  double _bonus(_Save s, String effect) => _techs
+      .where((t) => t.effect == effect && s.techs.contains(t.id))
+      .fold(0.0, (sum, t) => sum + t.value);
 
   /// Mirrors haven_rates().
   _Rates _rates(_Save s) {
-    var timber = 0.0,
-        luxury = 0.0,
-        gold = 0.0,
-        capacity = _baseStorage.toDouble();
+    var timber = 0.0, luxury = 0.0, research = 0.0;
+    var crewCap = 0.0, crewGrowth = _baseCrewGrowth;
+    var assigned = 0, storage = _baseStorage.toDouble();
     for (final b in s.buildings.where((b) => b.level > 0)) {
       final t = _typeOrNull(b.type)!;
-      final rate = t.rate * b.level;
+      final output = b.workers * t.workerRate;
       switch (t.produces) {
         case 'timber':
-          timber += rate;
+          timber += output;
         case 'luxury':
-          luxury += rate;
-        case 'gold':
-          gold += rate;
+          luxury += output;
+        case 'research':
+          research += output;
       }
-      capacity += t.storage * b.level;
+      crewCap += t.crewPerLevel * b.level;
+      crewGrowth += t.growthPerLevel * b.level;
+      assigned += b.workers;
+      storage += t.storage * b.level;
     }
-    return _Rates(timber, luxury, gold, capacity);
+    return _Rates(
+      timber: timber * (1 + _bonus(s, 'timber_bonus')),
+      luxury: luxury * (1 + _bonus(s, 'luxury_bonus')),
+      research: research,
+      goldPerIdle: _goldPerIdleCrew * (1 + _bonus(s, 'idle_gold_bonus')),
+      crewCap: crewCap,
+      crewGrowth: crewGrowth,
+      assigned: assigned,
+      capacity: storage * (1 + _bonus(s, 'storage_bonus')),
+    );
   }
 
   void _requireFreeQueue(_Save s) {
@@ -286,9 +464,17 @@ class DemoGameBackend implements GameBackend {
       'rates': {
         'timber': r.timber,
         'luxury': r.luxury,
-        'gold': r.gold,
+        'research': r.research,
         'capacity': r.capacity,
       },
+      'crew': {
+        'amount': s.crew,
+        'cap': r.crewCap,
+        'growth': r.crewGrowth,
+        'assigned': r.assigned,
+        'gold_per_idle': r.goldPerIdle,
+      },
+      'research_points': s.researchPoints,
       'buildings': [
         for (final b in [
           ...s.buildings,
@@ -300,15 +486,16 @@ class DemoGameBackend implements GameBackend {
               'type': b.type,
               'slot': b.slot,
               'level': b.level,
+              'workers': b.workers,
               'upgrade_finishes_at': b.finishesAt?.toUtc().toIso8601String(),
               'max_level': t.maxLevel,
+              'effect': t.effect(b.level),
               'next': b.level < t.maxLevel
                   ? {
                       'level': b.level + 1,
                       'cost': cost(t.cost(b.level + 1)),
                       'seconds': t.buildSeconds(b.level + 1),
-                      'rate': t.rate * (b.level + 1),
-                      'storage': t.storage * (b.level + 1),
+                      'effect': t.effect(b.level + 1),
                     }
                   : null,
             };
@@ -321,11 +508,21 @@ class DemoGameBackend implements GameBackend {
             'name': t.name,
             'description': t.description,
             'buildable': t.buildable,
-            'produces': t.produces,
-            'base_rate': t.rate,
-            'storage_per_level': t.storage,
             'cost': cost(t.cost(1)),
             'seconds': t.buildSeconds(1),
+            'effect': t.effect(1),
+          },
+      ],
+      'techs': [
+        for (final t in _techs)
+          {
+            'id': t.id,
+            'tree': 'economy',
+            'name': t.name,
+            'description': t.description,
+            'cost': t.cost,
+            'requires': t.requires,
+            'researched': s.techs.contains(t.id),
           },
       ],
     };
@@ -346,14 +543,17 @@ class _Type {
     required this.seconds,
     this.timeGrowth = 1.5,
     this.produces,
-    this.rate = 0,
+    this.workerRate = 0,
+    this.workersPerLevel = 0,
+    this.crewPerLevel = 0,
+    this.growthPerLevel = 0,
     this.storage = 0,
   });
 
   final String id, name, description;
   final bool buildable;
-  final int timber, gold, seconds, storage;
-  final double costGrowth, timeGrowth, rate;
+  final int timber, gold, seconds, storage, workersPerLevel, crewPerLevel;
+  final double costGrowth, timeGrowth, workerRate, growthPerLevel;
   final String? produces;
   int get maxLevel => 10;
 
@@ -361,17 +561,58 @@ class _Type {
   // matching Postgres' exact numeric math.
   static int _ceil(num v) => (v - 1e-6).ceil();
 
+  /// Mirrors building_cost().
   Cost cost(int level) => Cost(
     timber: _ceil(timber * pow(costGrowth, level - 1)),
     gold: _ceil(gold * pow(costGrowth, level - 1)),
   );
 
+  /// Mirrors build_seconds().
   int buildSeconds(int level) => _ceil(seconds * pow(timeGrowth, level - 1));
+
+  /// Mirrors building_effect().
+  Map<String, dynamic> effect(int level) => {
+    'produces': produces,
+    'worker_rate': workerRate,
+    'workers': workersPerLevel * level,
+    'crew_cap': crewPerLevel * level,
+    'growth': growthPerLevel * level,
+    'storage': storage * level,
+  };
+}
+
+class _Tech {
+  const _Tech(
+    this.id,
+    this.name,
+    this.description,
+    this.cost,
+    this.requires,
+    this.effect,
+    this.value,
+  );
+
+  final String id, name, description, effect;
+  final int cost;
+  final String? requires;
+  final double value;
 }
 
 class _Rates {
-  _Rates(this.timber, this.luxury, this.gold, this.capacity);
-  final double timber, luxury, gold, capacity;
+  _Rates({
+    required this.timber,
+    required this.luxury,
+    required this.research,
+    required this.goldPerIdle,
+    required this.crewCap,
+    required this.crewGrowth,
+    required this.assigned,
+    required this.capacity,
+  });
+
+  final double timber, luxury, research, goldPerIdle, crewCap, crewGrowth;
+  final double capacity;
+  final int assigned;
 }
 
 class _B {
@@ -380,6 +621,7 @@ class _B {
     required this.type,
     required this.slot,
     required this.level,
+    this.workers = 0,
     this.finishesAt,
   });
 
@@ -387,6 +629,7 @@ class _B {
   final String type;
   final int slot;
   int level;
+  int workers;
   DateTime? finishesAt;
 
   Map<String, dynamic> toJson() => {
@@ -394,6 +637,7 @@ class _B {
     'type': type,
     'slot': slot,
     'level': level,
+    'workers': workers,
     'finishesAt': finishesAt?.toIso8601String(),
   };
 
@@ -402,6 +646,7 @@ class _B {
     type: j['type'] as String,
     slot: j['slot'] as int,
     level: j['level'] as int,
+    workers: (j['workers'] as int?) ?? 0, // saves from Sprint 1 have no workers
     finishesAt: j['finishesAt'] == null
         ? null
         : DateTime.parse(j['finishesAt'] as String),
@@ -413,6 +658,9 @@ class _Save {
     required this.name,
     required this.island,
     required this.resources,
+    required this.crew,
+    required this.researchPoints,
+    required this.techs,
     required this.updatedAt,
     required this.buildings,
     required this.nextId,
@@ -421,6 +669,9 @@ class _Save {
   final String name;
   final Map<String, dynamic> island;
   final Map<String, double> resources;
+  double crew;
+  double researchPoints;
+  final Set<String> techs;
   DateTime updatedAt;
   final List<_B> buildings;
   int nextId;
@@ -429,11 +680,15 @@ class _Save {
     'name': name,
     'island': island,
     'resources': resources,
+    'crew': crew,
+    'researchPoints': researchPoints,
+    'techs': techs.toList(),
     'updatedAt': updatedAt.toIso8601String(),
     'buildings': [for (final b in buildings) b.toJson()],
     'nextId': nextId,
   };
 
+  // Fields added in Sprint 2 fall back to the starting values for old saves.
   factory _Save.fromJson(Map<String, dynamic> j) => _Save(
     name: j['name'] as String,
     island: Map<String, dynamic>.from(j['island'] as Map),
@@ -441,6 +696,9 @@ class _Save {
       for (final e in (j['resources'] as Map).entries)
         e.key as String: (e.value as num).toDouble(),
     },
+    crew: (j['crew'] as num?)?.toDouble() ?? 6,
+    researchPoints: (j['researchPoints'] as num?)?.toDouble() ?? 0,
+    techs: {for (final t in (j['techs'] as List?) ?? const []) t as String},
     updatedAt: DateTime.parse(j['updatedAt'] as String),
     buildings: [
       for (final b in j['buildings'] as List)

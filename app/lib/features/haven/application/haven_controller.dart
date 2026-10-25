@@ -40,6 +40,15 @@ class HavenController extends AsyncNotifier<HavenState> {
   Future<String?> upgrade(int buildingId) =>
       _run(() => ref.read(gameBackendProvider).upgradeBuilding(buildingId));
 
+  /// Sets how many crew work at a building. Returns an error message, or null.
+  Future<String?> assign(int buildingId, int workers) => _run(
+    () => ref.read(gameBackendProvider).assignWorkers(buildingId, workers),
+  );
+
+  /// Spends research points on a tech. Returns an error message, or null.
+  Future<String?> research(String techId) =>
+      _run(() => ref.read(gameBackendProvider).research(techId));
+
   /// Gets the latest state (for example when the app comes back to the front).
   Future<void> refresh() async {
     await _run(() => ref.read(gameBackendProvider).fetchHaven());
@@ -71,3 +80,8 @@ class HavenController extends AsyncNotifier<HavenState> {
     _completionTimer = Timer(wait, refresh);
   }
 }
+
+/// The other havens on the player's island. Fetched when the list is opened.
+final neighboursProvider = FutureProvider.autoDispose<List<Neighbour>>(
+  (ref) => ref.read(gameBackendProvider).neighbours(),
+);

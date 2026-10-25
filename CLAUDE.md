@@ -3,7 +3,7 @@
 A mobile-first Flutter + Supabase pirate strategy game, inspired by Ikariam.
 
 - Full design: `docs/DESIGN.md` (single source of truth for features and scope)
-- Current sprint: `docs/SPRINT-1.md`
+- Sprints: `docs/SPRINT-1.md` (done), `docs/SPRINT-2.md` (current)
 
 ## Instructions for Claude
 
@@ -17,7 +17,7 @@ A mobile-first Flutter + Supabase pirate strategy game, inspired by Ikariam.
 
 ## Current focus
 
-We are building the absolute minimum vertical slice first (Sprint 1).
+Sprint 2: crew, jobs, Tavern, Academy and the Economy research tree.
 
 ## Architecture rules
 
@@ -28,6 +28,10 @@ We are building the absolute minimum vertical slice first (Sprint 1).
   `resources_updated_at`. `settle_haven()` adds production for the elapsed time (and
   completes finished constructions in order) whenever an action or read happens. This is
   what makes offline progress work.
+- **Every new migration revokes execute on all public functions and re-grants only the
+  RPCs.** Supabase grants new functions to `anon`/`authenticated` by default.
+- **The offline demo mirrors the SQL rules** (`app/lib/features/haven/data/demo_game_backend.dart`).
+  Change both together; their tests mirror each other.
 - **Game data lives in the database.** Building stats are in `building_types`, and costs
   and times are computed by `building_cost()` / `build_seconds()` in SQL. The client
   displays what the server sends and never duplicates game formulas.
@@ -43,7 +47,7 @@ We are building the absolute minimum vertical slice first (Sprint 1).
 ## Commands
 
 ```bash
-# database tests (needs Docker)
+# database tests (local Postgres, or Docker)
 scripts/test_db.sh
 
 # Flutter

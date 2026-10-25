@@ -102,12 +102,7 @@ class _BuildOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final affordable = haven.canAfford(type.cost, now);
-    final produces = productionText(
-      type.produces,
-      type.baseRate,
-      haven.island.luxury,
-      storage: type.storagePerLevel,
-    );
+    final effect = effectLines(type.effect, haven.island.luxury).join(' · ');
 
     final String label;
     if (busy) {
@@ -145,14 +140,6 @@ class _BuildOption extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (produces.isNotEmpty)
-                  Text(
-                    produces,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: BwColors.woodLight,
-                    ),
-                  ),
               ],
             ),
             const SizedBox(height: 4),
@@ -162,6 +149,16 @@ class _BuildOption extends StatelessWidget {
                   : type.description,
               style: const TextStyle(color: BwColors.ink),
             ),
+            if (effect.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                effect,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: BwColors.woodLight,
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             CostRow(
               cost: type.cost,

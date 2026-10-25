@@ -1,9 +1,19 @@
--- Plays through the Sprint 1 rules as real players and checks the results.
+-- Plays through the haven rules as real players and checks the results.
 -- Every statement runs in its own transaction, so now() moves forward.
 -- "Time travel" is done by shifting stored timestamps into the past as admin.
 
 \set QUIET on
 \set ON_ERROR_STOP on
+
+-- Shift Anne's haven one hour (or any interval) into the past.
+create function pg_temp.time_passes(p_player uuid, p_by interval) returns void
+language sql as $$
+  update public.havens set resources_updated_at = resources_updated_at - p_by
+  where player_id = p_player;
+  update public.buildings set upgrade_finishes_at = upgrade_finishes_at - p_by
+  where upgrade_finishes_at is not null
+    and haven_id in (select id from public.havens where player_id = p_player);
+$$;
 
 -- Two players sign up.
 insert into auth.users (id, email, raw_user_meta_data) values
@@ -29,7 +39,10 @@ begin
   assert jsonb_array_length(s -> 'buildings') = 1, 'haven starts with one building';
   assert s -> 'buildings' -> 0 ->> 'type' = 'captains_quarters', 'starting building is the Captain''s Quarters';
   assert (s -> 'resources' ->> 'timber')::numeric = 300, 'starting timber';
-  assert jsonb_array_length(s -> 'catalogue') = 4, 'catalogue lists 4 building types';
+  assert (s -> 'crew' ->> 'amount')::numeric between 6 and 6.01, 'starting crew';
+  assert (s -> 'crew' ->> 'cap')::numeric = 20, 'Captain''s Quarters level 1 houses 20';
+  assert jsonb_array_length(s -> 'catalogue') = 6, 'catalogue lists 6 building types';
+  assert jsonb_array_length(s -> 'techs') = 4, 'four Economy techs';
 end $$;
 
 -- Players cannot write to tables directly.
@@ -41,6 +54,11 @@ do $$ begin
   begin
     insert into buildings (haven_id, type, slot, level) values ((select id from havens limit 1), 'warehouse', 5, 10);
     assert false, 'direct inserts must fail';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    insert into player_techs (player_id, tech_id) values (auth.uid(), 'ships_ledger');
+    assert false, 'players cannot grant themselves research';
   exception when insufficient_privilege then null;
   end;
 end $$;
@@ -75,6 +93,11 @@ do $$ begin
   exception when raise_exception then null; end;
   begin perform place_building('warehouse', 8); assert false, 'plot 8 does not exist';
   exception when raise_exception then null; end;
+  begin perform assign_workers((select id from buildings where type = 'lumber_camp'), 2);
+    assert false, 'no workers before the building is finished';
+  exception when raise_exception then
+    assert sqlerrm like '%isn''t finished yet%', 'unfinished message: ' || sqlerrm;
+  end;
 end $$;
 
 -- ---------- Mary cannot see Anne's haven ----------
@@ -86,42 +109,71 @@ begin
   assert (select count(*) from buildings) = 1, 'Mary only sees her own buildings';
   begin
     perform upgrade_building((select min(id) from buildings b where b.type = 'lumber_camp'));
-    -- Mary has no lumber camp; Anne's id must be rejected.
     assert false, 'upgrading someone else''s building must fail';
   exception when raise_exception then null; end;
 end $$;
 
--- ---------- One hour passes (Anne is offline) ----------
+-- ---------- One hour passes (Anne is offline, nobody works yet) ----------
 reset role;
-update havens set resources_updated_at = resources_updated_at - interval '1 hour'
-where player_id = '00000000-0000-0000-0000-00000000000a';
-update buildings set upgrade_finishes_at = upgrade_finishes_at - interval '1 hour'
-where upgrade_finishes_at is not null
-  and haven_id = (select id from havens where player_id = '00000000-0000-0000-0000-00000000000a');
+select pg_temp.time_passes('00000000-0000-0000-0000-00000000000a', interval '1 hour');
 
 set role authenticated;
 set request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a"}';
+do $$
+declare s jsonb := get_my_haven(); g numeric; c numeric;
+begin
+  g := (s -> 'resources' ->> 'gold')::numeric;
+  c := (s -> 'crew' ->> 'amount')::numeric;
+  assert s -> 'buildings' -> 1 ->> 'level' = '1', 'lumber camp finished while offline';
+  assert s -> 'buildings' -> 1 ->> 'upgrade_finishes_at' is null, 'timer cleared';
+  assert (s -> 'resources' ->> 'timber')::numeric between 240 and 240.1, 'no timber without workers';
+  -- Crew grows 12/h: 6 → 18. Average crew 12 for one hour, all idle: 12 × 4 gold.
+  assert c between 18 and 18.01, 'crew grew offline: ' || c;
+  assert g between 147.9 and 148.1, 'idle crew earned gold offline: ' || g;
+  assert (s -> 'buildings' -> 1 -> 'next' -> 'cost' ->> 'timber')::int = 96, 'level 2 costs 60 × 1.6';
+  assert (s -> 'buildings' -> 1 -> 'effect' ->> 'workers')::int = 8, 'level 1 has 8 jobs';
+end $$;
+
+-- Put 8 crew to work at the lumber camp.
+do $$
+declare s jsonb;
+begin
+  begin perform assign_workers((select id from buildings where type = 'lumber_camp'), 9);
+    assert false, 'only 8 jobs at level 1';
+  exception when raise_exception then
+    assert sqlerrm like '%has jobs for 8 crew%', 'jobs message: ' || sqlerrm;
+  end;
+  begin perform assign_workers((select id from buildings where type = 'captains_quarters'), 1);
+    assert false, 'nobody works at the Captain''s Quarters';
+  exception when raise_exception then null; end;
+
+  s := assign_workers((select id from buildings where type = 'lumber_camp'), 8);
+  assert (s -> 'rates' ->> 'timber')::numeric = 320, '8 workers × 40 timber';
+  assert (s -> 'crew' ->> 'assigned')::numeric = 8, 'assigned crew is reported';
+end $$;
+
+-- Another hour: timber from workers, crew reaches the cap, only idle crew earn gold.
+reset role;
+select pg_temp.time_passes('00000000-0000-0000-0000-00000000000a', interval '1 hour');
+
+set role authenticated;
 do $$
 declare s jsonb := get_my_haven(); t numeric; g numeric;
 begin
   t := (s -> 'resources' ->> 'timber')::numeric;
   g := (s -> 'resources' ->> 'gold')::numeric;
-  assert s -> 'buildings' -> 1 ->> 'level' = '1', 'lumber camp finished while offline';
-  assert s -> 'buildings' -> 1 ->> 'upgrade_finishes_at' is null, 'timer cleared';
-  -- Lumber camp finished 15 s into the hour: 300/h for ~59m45s ≈ 298.75 timber.
-  assert t between 240 + 298 and 240 + 300, 'timber produced offline: ' || t;
-  -- Captain's Quarters: 30 gold/h for the full hour.
-  assert g between 129.9 and 130.1, 'gold produced offline: ' || g;
-  assert (s -> 'rates' ->> 'timber')::numeric = 300, 'timber rate';
-  assert (s -> 'buildings' -> 1 -> 'next' -> 'cost' ->> 'timber')::int = 96, 'level 2 costs 60 × 1.6';
+  assert t between 240 + 319.9 and 240 + 320.1, 'timber from workers: ' || t;
+  assert (s -> 'crew' ->> 'amount')::numeric = 20, 'crew stops at the housing cap';
+  -- crew-hours: (18+20)/2 × 1/6 h + 20 × 5/6 h = 19.833; minus 8 worked → 11.833 × 4 gold.
+  assert g between 148 + 47.2 and 148 + 47.5, 'gold only from idle crew: ' || g;
 end $$;
 
--- Upgrade the lumber camp and build a plantation after it.
+-- Upgrade the lumber camp, then build a plantation after it.
 do $$
-declare s jsonb;
+declare s jsonb := upgrade_building((select id from buildings where type = 'lumber_camp'));
 begin
-  s := upgrade_building((select id from buildings where type = 'lumber_camp'));
   assert s -> 'buildings' -> 1 ->> 'upgrade_finishes_at' is not null, 'upgrade timer started';
+  assert (s -> 'rates' ->> 'timber')::numeric = 320, 'workers keep working during an upgrade';
 end $$;
 
 reset role;
@@ -129,12 +181,11 @@ update buildings set upgrade_finishes_at = now() - interval '1 second'
 where upgrade_finishes_at is not null;
 
 set role authenticated;
-set request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a"}';
 do $$
 declare s jsonb := place_building('plantation', 2);
 begin
   assert s -> 'buildings' -> 1 ->> 'level' = '2', 'upgrade completed before the next build';
-  assert (s -> 'rates' ->> 'timber')::numeric = 600, 'level 2 doubles timber output';
+  assert (s -> 'buildings' -> 1 -> 'effect' ->> 'workers')::int = 16, 'level 2 has 16 jobs';
   assert jsonb_array_length(s -> 'buildings') = 3, 'plantation placed';
 end $$;
 
@@ -159,4 +210,4 @@ do $$ begin
 end $$;
 
 reset role;
-\echo 'All database tests passed.'
+\echo 'Haven rules: all tests passed.'

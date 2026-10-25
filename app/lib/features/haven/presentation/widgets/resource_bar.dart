@@ -32,6 +32,10 @@ class ResourceBar extends ConsumerWidget {
       Resource.gold,
     ];
 
+    final crew = haven.crewAt(now);
+    final crewFull = crew >= haven.crew.cap;
+    final hasAcademy = haven.hasBuilt('academy');
+
     return Container(
       color: BwColors.woodLight,
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
@@ -43,13 +47,28 @@ class ResourceBar extends ConsumerWidget {
             runSpacing: 8,
             children: [
               for (final r in shown)
-                _ResourceChip(
-                  resource: r,
-                  amount: haven.amountAt(r, now),
-                  rate: haven.ratePerHour(r),
+                _Chip(
+                  icon: resourceIcon(r),
+                  label: resourceLabel(r),
+                  value: '${haven.amountAt(r, now).floor()}',
+                  rate: haven.ratePerHour(r, now),
                   full:
                       r != Resource.gold &&
                       haven.amountAt(r, now) >= haven.capacity,
+                ),
+              _Chip(
+                icon: crewIcon,
+                label: 'Crew',
+                value: '${crew.floor()}/${haven.crew.cap.round()}',
+                rate: crewFull ? 0 : haven.crew.growth,
+                note: '${haven.idleCrew(now)} idle',
+              ),
+              if (hasAcademy)
+                _Chip(
+                  icon: researchIcon,
+                  label: 'Research points',
+                  value: '${haven.researchAt(now).floor()}',
+                  rate: haven.researchRate,
                 ),
             ],
           ),
@@ -64,25 +83,36 @@ class ResourceBar extends ConsumerWidget {
   }
 }
 
-class _ResourceChip extends StatelessWidget {
-  const _ResourceChip({
-    required this.resource,
-    required this.amount,
+class _Chip extends StatelessWidget {
+  const _Chip({
+    required this.icon,
+    required this.label,
+    required this.value,
     required this.rate,
-    required this.full,
+    this.full = false,
+    this.note,
   });
 
-  final Resource resource;
-  final double amount;
+  final IconData icon;
+  final String label;
+  final String value;
   final double rate;
   final bool full;
+  final String? note;
 
   @override
   Widget build(BuildContext context) {
+    final extra = full
+        ? 'full'
+        : rate > 0
+        ? '+${rate.round()}/h'
+        : null;
     return Semantics(
       label:
-          '${resourceLabel(resource)}: ${amount.floor()}'
-          '${rate > 0 ? ', plus ${rate.round()} per hour' : ''}${full ? ', storage full' : ''}',
+          '$label: $value'
+          '${rate > 0 && !full ? ', plus ${rate.round()} per hour' : ''}'
+          '${full ? ', storage full' : ''}'
+          '${note != null ? ', $note' : ''}',
       excludeSemantics: true,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -97,20 +127,20 @@ class _ResourceChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(resourceIcon(resource), size: 18, color: BwColors.wood),
+            Icon(icon, size: 18, color: BwColors.wood),
             const SizedBox(width: 6),
             Text(
-              '${amount.floor()}',
+              value,
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 color: BwColors.ink,
                 fontFeatures: [FontFeature.tabularFigures()],
               ),
             ),
-            if (rate > 0) ...[
+            if (extra != null) ...[
               const SizedBox(width: 4),
               Text(
-                full ? 'full' : '+${rate.round()}/h',
+                extra,
                 style: TextStyle(
                   fontSize: 11,
                   color: full ? BwColors.danger : BwColors.woodLight,

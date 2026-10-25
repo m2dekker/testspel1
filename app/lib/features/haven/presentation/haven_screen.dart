@@ -9,6 +9,7 @@ import '../domain/models.dart';
 import 'look.dart';
 import 'widgets/build_sheet.dart';
 import 'widgets/building_sheet.dart';
+import 'widgets/neighbours_sheet.dart';
 import 'widgets/plot_tile.dart';
 import 'widgets/resource_bar.dart';
 
@@ -47,18 +48,41 @@ class _HavenScreenState extends ConsumerState<HavenScreen> {
       appBar: AppBar(
         title: haven.value == null
             ? const Text('Blackwake Isles')
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(haven.value!.name, style: const TextStyle(fontSize: 18)),
-                  Text(
-                    '${haven.value!.island.name} · ${resourceLabel(haven.value!.island.luxury)} island',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: BwColors.parchmentDark,
+            : InkWell(
+                // Tap the island name to see who else lives here.
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  builder: (_) => NeighboursSheet(island: haven.value!.island),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      haven.value!.name,
+                      style: const TextStyle(fontSize: 18),
                     ),
-                  ),
-                ],
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            '${haven.value!.island.name} · ${resourceLabel(haven.value!.island.luxury)} island',
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: BwColors.parchmentDark,
+                            ),
+                          ),
+                        ),
+                        const Icon(
+                          Icons.expand_more,
+                          size: 16,
+                          color: BwColors.parchmentDark,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
         actions: const [_HavenMenu()],
       ),

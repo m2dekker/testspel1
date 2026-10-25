@@ -104,6 +104,8 @@ class _BuiltPlot extends StatelessWidget {
         ? 'Building… ${formatDuration(remaining ?? Duration.zero)}'
         : finishes != null
         ? 'Lv ${building.level} → ${building.level + 1} · ${formatDuration(remaining!)}'
+        : building.hasJobs
+        ? 'Lv ${building.level} · ${building.workers}/${building.effect.workers} crew'
         : 'Level ${building.level}';
 
     return Semantics(
