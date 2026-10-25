@@ -138,6 +138,17 @@
   .row { display: flex; gap: 8px; flex-wrap: wrap; }
   .row > * { flex: 1; }
   .muted { color: #6b4e36; font-size: 13px; }
+  .card h3 { font-family: var(--font-display); font-weight: 400; font-size: 24px; margin: 4px 0 0; color: var(--wood); }
+  .paces { display: flex; gap: 8px; }
+  .paces button { flex: 1; }
+  .paces button[aria-pressed="true"] { background: var(--wood); color: var(--parch); }
+  .isl { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--parch-2); }
+  .isl:first-child { border-top: 0; }
+  .isl div { min-width: 0; }
+  .isl b { font-weight: 600; }
+  .isl button { flex: none; max-width: 48%; min-height: 40px; }
+  .isl button:disabled { opacity: 0.5; cursor: default; }
+  #heldText { font-size: 12px; color: var(--parch-2); }
   kbd { font-family: ui-monospace, Menlo, monospace; font-size: 12px; background: #fffaf0; border: 1px solid var(--parch-2); border-radius: 4px; padding: 0 4px; }
 
   @media (prefers-reduced-motion: reduce) {
@@ -151,6 +162,7 @@
   <div class="panel status" aria-live="polite">
     <div class="hull">Hull <span class="hull-bar"><i id="hullFill"></i></span> <span id="hullText">100</span></div>
     <div class="stores" id="stores"></div>
+    <div id="heldText"></div>
   </div>
   <div class="side">
     <canvas id="mini" width="224" height="224" aria-label="Minimap. Tap to open the world map." role="button" tabindex="0"></canvas>
@@ -190,11 +202,14 @@
     <h1>Blackwake Isles</h1>
     <p><b>Sailing test.</b> Find islands, scout them, and take the ones worth having.</p>
     <ul>
+      <li><b>The wind decides your speed.</b> Sailing across the wind is fastest. Close to the wind you crawl, and straight into it you stop. Watch the wind arrow.</li>
       <li>Islands appear on your map as you sail past them.</li>
       <li>Get closer with your spyglass to see <b>who holds an island</b>. Raider and Navy forts open fire once you're inside their range (the red dashed circle), so you have time to turn back.</li>
-      <li>Silence a fort with broadsides, then slow down near the island and <b>land your crew to capture it</b>. Unclaimed islands can be taken right away.</li>
-      <li>Every island you hold produces its resource for you, also while you're away. Your home island repairs your hull.</li>
+      <li>Silence a fort with broadsides, then slow down and <b>land your crew</b>. They lay siege, and the island becomes yours when the siege timer ends. You can sail on in the meantime.</li>
+      <li>You can hold <b>3 islands</b> besides your haven. Raiders try to take them back, so <b>build forts</b> on them from the world map. Higher fort levels need iron.</li>
+      <li>Islands you hold produce their resource, also while you're away. Your home island repairs your hull.</li>
     </ul>
+    <p class="muted">This test starts at <b>Dev</b> pace (nearly instant timers). Switch to <b>Live</b> pace on the world map to feel the real timings.</p>
     <p class="muted">Phone: drag on the left half to steer, buttons on the right fire and set sail. Keyboard: <kbd>A</kbd>/<kbd>D</kbd> steer, <kbd>W</kbd>/<kbd>S</kbd> sails, <kbd>Q</kbd>/<kbd>E</kbd> fire, <kbd>M</kbd> map.</p>
     <button class="primary" id="startBtn" type="button">Set sail</button>
   </div>
@@ -216,6 +231,14 @@
       <span><i style="background:#7b8a90"></i>Not scouted yet</span>
     </div>
     <p id="mapStats" class="muted"></p>
+    <h3>Your islands</h3>
+    <div id="myIslands"></div>
+    <h3>World pace</h3>
+    <div class="paces">
+      <button class="secondary" type="button" data-pace="dev" aria-pressed="true">Dev (nearly instant)</button>
+      <button class="secondary" type="button" data-pace="live" aria-pressed="false">Live</button>
+    </div>
+    <p class="muted" id="paceNote"></p>
     <label class="muted" for="seedInput">World seed: the same seed always makes the same world.</label>
     <div class="seedrow">
       <input id="seedInput" type="text" maxlength="32" autocomplete="off" spellcheck="false">
@@ -410,7 +433,35 @@
   const SEED_KEY = 'bw-sail-seed';
   const saveKey = () => 'bw-sail-v1:' + world.seed;
 
-  const SHIP_MAX = 150;      // units per second at full sail with the wind
+  const SHIP_MAX = 48;       // units per second: full sail, best point of sail, steady wind
+  const HOLD_LIMIT = 3;      // islands you can hold besides your haven
+
+  // How fast time-based things happen in a world. "dev" is for testing.
+  // All timers use real time (Date.now), so they keep running while you are away.
+  const PACES = {
+    dev: {
+      label: 'Dev', speed: 3, capture: 5, fortPerLevel: 3, produceEvery: 2.5,
+      raidEvery: 60, fortRebuild: 45, regen: 4,
+      note: 'Dev pace: sieges take 5 seconds, forts build in seconds, raiders strike every minute, and your ship sails 3× faster.',
+    },
+    live: {
+      label: 'Live', speed: 1, capture: 30 * 60, fortPerLevel: 20 * 60, produceEvery: 120,
+      raidEvery: 3 * 3600, fortRebuild: 2 * 3600, regen: 0.4,
+      note: 'Live pace: a siege takes 30 minutes, each fort level 20 minutes more than the last, raiders try every 3 hours, and silenced forts rebuild after 2 hours.',
+    },
+  };
+  let paceId = 'dev';
+  const pace = () => PACES[paceId];
+  let lastRaid = Date.now();
+  const fortCost = (level) => ({ timber: 60 * level, iron: level > 1 ? 25 * (level - 1) : 0 });
+  const MAX_FORT = 5;
+
+  function fmtTime(sec) {
+    sec = Math.max(0, Math.ceil(sec));
+    if (sec < 60) return `${sec}s`;
+    if (sec < 3600) return `${Math.floor(sec / 60)}m ${String(sec % 60).padStart(2, '0')}s`;
+    return `${Math.floor(sec / 3600)}h ${String(Math.floor((sec % 3600) / 60)).padStart(2, '0')}m`;
+  }
   const BALL_SPEED = 440;
   const CANNON_RANGE = 340;
   const RELOAD = 2.2;
@@ -431,7 +482,10 @@
     stores = { timber: 40, rum: 0, spice: 0, iron: 0, silk: 0 };
     waypoint = null;
     balls = []; parts = [];
+    paceId = 'dev'; lastRaid = Date.now();
+    for (const isl of world.islands) { isl.siegeEndsAt = null; isl.defLevel = 0; isl.defEndsAt = null; isl.silencedAt = null; }
     load();
+    updatePaceButtons();
     storage.set(SEED_KEY, seed);
     $('#seedInput').value = seed;
     updateSailButton();
@@ -442,7 +496,10 @@
     if (!world) return;
     storage.set(saveKey(), JSON.stringify({
       savedAt: Date.now(),
-      islands: world.islands.map((i) => [i.owner, Math.round(i.fort.hp), i.seen ? 1 : 0, i.scouted ? 1 : 0]),
+      islands: world.islands.map((i) => [i.owner, Math.round(i.fort.hp), i.seen ? 1 : 0, i.scouted ? 1 : 0,
+        i.siegeEndsAt, i.defLevel, i.defEndsAt, i.silencedAt, i.strength]),
+      pace: paceId,
+      lastRaid,
       explored: Array.from(explored).join(''),
       stores,
       ship: { x: ship.x, y: ship.y, angle: ship.angle, hull: ship.hull, sail: ship.sail },
@@ -459,26 +516,33 @@
         const isl = world.islands[i];
         if (!isl) return;
         isl.owner = v[0]; isl.fort.hp = v[1]; isl.seen = !!v[2]; isl.scouted = !!v[3];
+        isl.siegeEndsAt = v[4] || null; isl.defLevel = v[5] || 0; isl.defEndsAt = v[6] || null; isl.silencedAt = v[7] || null;
+        if (v[8] != null && v[8] !== isl.strength) { isl.strength = v[8]; isl.fort.maxHp = v[8] * 70; }
       });
       for (let i = 0; i < explored.length && i < s.explored.length; i++) explored[i] = s.explored.charCodeAt(i) === 49 ? 1 : 0;
       Object.assign(stores, s.stores);
       Object.assign(ship, s.ship);
       waypoint = s.waypoint || null;
-      // Offline production: islands kept producing while you were away (up to 8 hours).
+      paceId = PACES[s.pace] ? s.pace : 'dev';
+      lastRaid = s.lastRaid || Date.now();
+      // Offline: sieges, fort building, raids and production all continued (up to 8 hours).
+      const notes = processTime(true);
       const away = clamp((Date.now() - s.savedAt) / 1000, 0, 8 * 3600);
       const earned = produce(away);
-      if (earned > 0) setTimeout(() => toast(`While you were away: +${earned} goods`), 600);
+      if (earned > 0) notes.unshift(`+${earned} goods from your islands`);
+      if (notes.length) setTimeout(() => { toast('While you were away'); banner(notes.slice(0, 3).join(' · '), notes.some((n) => n.includes('retook')), 8); }, 600);
       return true;
     } catch (e) { return false; }
   }
 
-  // Islands you hold produce 1 unit every 2.5 s each.
+  // Islands you hold produce 1 unit each per pace().produceEvery seconds.
   let produceAcc = 0;
   function produce(seconds) {
     produceAcc += seconds;
-    const ticks = Math.floor(produceAcc / 2.5);
+    const every = pace().produceEvery;
+    const ticks = Math.floor(produceAcc / every);
     if (ticks <= 0) return 0;
-    produceAcc -= ticks * 2.5;
+    produceAcc -= ticks * every;
     let total = 0;
     for (const isl of world.islands) {
       if (isl.owner !== 'you') continue;
@@ -584,14 +648,13 @@
   // Capture
   // =================================================================
 
-  let capture = { isl: null, time: 0 };
-  const CAPTURE_TIME = 3;
   const captureBtn = $('#captureBtn');
+  const heldCount = () => world.islands.filter((i) => !i.home && (i.owner === 'you' || i.siegeEndsAt)).length;
 
   function capturable() {
     let best = null;
     for (const isl of world.islands) {
-      if (isl.owner === 'you') continue;
+      if (isl.owner === 'you' || isl.siegeEndsAt) continue;
       const open = isl.owner === 'free' || isl.fort.hp <= 0;
       if (!open || !isl.scouted) continue;
       if (dist(ship.x, ship.y, isl.x, isl.y) < isl.r + 170) best = isl;
@@ -599,11 +662,81 @@
     return best;
   }
 
+  // Landing the crew starts a siege. The island is yours when the timer ends,
+  // even if your ship sails away (or you close the game).
   function tryStartCapture() {
     const isl = capturable();
     if (!isl) return;
-    if (ship.speed > 45) { banner(`Slow down to land your crew on ${isl.name}.`, false, 2); return; }
-    capture = { isl, time: 0 };
+    if (heldCount() >= HOLD_LIMIT) {
+      banner(`You can hold ${HOLD_LIMIT} islands besides your haven. A bigger Captain's Quarters will raise this later.`, true, 4);
+      return;
+    }
+    if (ship.speed > 12 * pace().speed) { banner(`Slow down to land your crew on ${isl.name}.`, false, 2); return; }
+    isl.siegeEndsAt = Date.now() + pace().capture * 1000;
+    toast(`Crew landed on ${isl.name}`);
+    banner(`Your crew lays siege to ${isl.name}. It's yours in ${fmtTime(pace().capture)}. You can sail on; they'll hold it.`, false, 6);
+    save();
+  }
+
+  // Everything that runs on the real clock: sieges, fort building, forts
+  // rebuilding, and raids. Returns messages (used for "while you were away").
+  function processTime(quiet) {
+    const now = Date.now();
+    const notes = [];
+    const say = (text, bad) => { notes.push(text); if (!quiet) banner(text, bad, 6); };
+    for (const isl of world.islands) {
+      if (isl.siegeEndsAt && now >= isl.siegeEndsAt) {
+        isl.siegeEndsAt = null; isl.owner = 'you'; isl.defLevel = 0; isl.defEndsAt = null; isl.silencedAt = null;
+        if (!quiet) toast(`${isl.name} is yours!`);
+        say(`${isl.name} is yours. Build a fort there before raiders come back.`);
+      }
+      if (isl.defEndsAt && now >= isl.defEndsAt) {
+        isl.defEndsAt = null; isl.defLevel += 1;
+        say(`The fort on ${isl.name} reached level ${isl.defLevel}.`);
+      }
+      if (hostile(isl.owner) && isl.fort.hp <= 0 && !isl.siegeEndsAt && isl.silencedAt &&
+          now - isl.silencedAt > pace().fortRebuild * 1000) {
+        isl.fort.hp = isl.fort.maxHp; isl.silencedAt = null;
+      }
+    }
+    let n = 0;
+    while (now - lastRaid >= pace().raidEvery * 1000 && n < 12) {
+      lastRaid += pace().raidEvery * 1000; n++;
+      const r = raid(); if (r) say(r.text, r.bad);
+    }
+    if (n >= 12) lastRaid = now;
+    return notes;
+  }
+
+  // Raiders pick one of your islands. A fort at least as strong as the attack holds.
+  function raid() {
+    const home = world.islands[0];
+    const mine = world.islands.filter((i) => i.owner === 'you' && !i.home);
+    if (!mine.length) return null;
+    const isl = mine[Math.floor(Math.random() * mine.length)];
+    const far = dist(isl.x, isl.y, home.x, home.y) > 1700 ? 1 : 0;
+    const attack = 1 + Math.floor(Math.random() * 2) + far;
+    if (isl.defLevel >= attack) {
+      return { text: `Raiders (strength ${attack}) attacked ${isl.name}. Your level ${isl.defLevel} fort drove them off.`, bad: false };
+    }
+    const lvl = isl.defLevel;
+    isl.owner = 'raiders'; isl.strength = attack;
+    isl.fort.maxHp = attack * 70; isl.fort.hp = isl.fort.maxHp;
+    isl.defLevel = 0; isl.defEndsAt = null;
+    return { text: `Raiders retook ${isl.name}! Strength ${attack} against your level ${lvl} fort.`, bad: true };
+  }
+
+  function upgradeFort(isl) {
+    if (isl.owner !== 'you' || isl.defEndsAt || isl.defLevel >= MAX_FORT) return;
+    const lvl = isl.defLevel + 1;
+    const cost = fortCost(lvl);
+    if (stores.timber < cost.timber || stores.iron < cost.iron) {
+      banner(`A level ${lvl} fort needs ${cost.timber} timber${cost.iron ? ` and ${cost.iron} iron` : ''}.`, true, 3);
+      return;
+    }
+    stores.timber -= cost.timber; stores.iron -= cost.iron;
+    isl.defEndsAt = Date.now() + pace().fortPerLevel * lvl * 1000;
+    save(); renderMyIslands();
   }
   captureBtn.addEventListener('click', tryStartCapture);
 
@@ -611,7 +744,36 @@
   // Simulation
   // =================================================================
 
-  function windAngle() { return world.windBase + Math.sin(t * 0.015) * 0.9; }
+  // Wind slowly turns and changes strength. windTo = the direction it blows toward.
+  function wind() {
+    const tt = Date.now() / 1000;
+    return {
+      to: world.windBase + Math.sin(tt * 0.004) * 1.3 + Math.sin(tt * 0.0011 + 2) * 0.9,
+      strength: 0.8 + 0.3 * Math.sin(tt * 0.017 + 1),
+    };
+  }
+
+  // Sailing "polar": speed factor by angle away from dead downwind (degrees).
+  // Fastest across the wind, slow close to it, almost nothing straight into it.
+  const POLAR = [[0, 0.62], [45, 0.85], [90, 1.0], [115, 0.85], [130, 0.5], [142, 0.12], [180, 0.04]];
+  function polar(offDeg) {
+    for (let i = 1; i < POLAR.length; i++) {
+      const [a0, v0] = POLAR[i - 1], [a1, v1] = POLAR[i];
+      if (offDeg <= a1) return v0 + ((offDeg - a0) / (a1 - a0)) * (v1 - v0);
+    }
+    return POLAR[POLAR.length - 1][1];
+  }
+  function pointOfSail(offDeg) {
+    if (offDeg < 35) return 'Running with the wind';
+    if (offDeg < 75) return 'Broad reach';
+    if (offDeg < 112) return 'Beam reach: fastest';
+    if (offDeg < 138) return 'Close hauled: slow';
+    return 'In irons! Turn away from the wind';
+  }
+  const shipOff = () => Math.abs(angDiff(ship.angle, wind().to)) * 180 / Math.PI;
+
+  // Wind streaks drift across the sea so you can see the wind.
+  let streaks = [];
 
   function update(dt) {
     t += dt;
@@ -620,11 +782,19 @@
     let rudder = ship.rudder;
     if (keys['a'] || keys['arrowleft']) rudder = -1;
     if (keys['d'] || keys['arrowright']) rudder = 1;
-    const wind = windAngle();
-    const withWind = Math.cos(angDiff(ship.angle, wind)) * 0.5 + 0.5; // 0 into the wind, 1 with it
-    const target = ship.sail * SHIP_MAX * (0.4 + 0.6 * withWind);
-    ship.speed += (target - ship.speed) * Math.min(1, dt * 0.7);
-    ship.angle += rudder * dt * (0.55 + 0.9 * (ship.speed / SHIP_MAX));
+    const w = wind();
+    const maxSpeed = SHIP_MAX * pace().speed;
+    const target = ship.sail * maxSpeed * polar(shipOff()) * w.strength;
+    // Heavy ship: picks up speed slowly, loses it a bit faster.
+    ship.speed += (target - ship.speed) * Math.min(1, dt * (target > ship.speed ? 0.25 : 0.45));
+    ship.angle += rudder * dt * (0.3 + 0.5 * Math.min(1, ship.speed / maxSpeed) + (ship.speed < 3 ? 0.15 : 0));
+
+    // wind streaks around the camera
+    if (streaks.length < 45) for (let i = streaks.length; i < 45; i++) streaks.push({ x: ship.x + (Math.random() - 0.5) * 1400, y: ship.y + (Math.random() - 0.5) * 1800, a: Math.random() });
+    for (const s of streaks) {
+      s.x += Math.cos(w.to) * 90 * w.strength * dt; s.y += Math.sin(w.to) * 90 * w.strength * dt;
+      if (Math.abs(s.x - ship.x) > 760 || Math.abs(s.y - ship.y) > 960) { s.x = ship.x + (Math.random() - 0.5) * 1400; s.y = ship.y + (Math.random() - 0.5) * 1800; }
+    }
     ship.x += Math.cos(ship.angle) * ship.speed * dt;
     ship.y += Math.sin(ship.angle) * ship.speed * dt;
     ship.x = clamp(ship.x, 40, WORLD - 40);
@@ -678,11 +848,11 @@
 
     // ---- forts ----
     for (const isl of world.islands) {
-      if (!hostile(isl.owner)) continue;
+      if (!hostile(isl.owner) || isl.siegeEndsAt) continue;
       const f = isl.fort;
       const d = dist(f.x, f.y, ship.x, ship.y);
       if (f.hp <= 0) continue;
-      if (d > 900 && f.hp < f.maxHp) f.hp = Math.min(f.maxHp, f.hp + dt * 4); // repairs when you leave
+      if (d > 900 && f.hp < f.maxHp) f.hp = Math.min(f.maxHp, f.hp + dt * pace().regen); // repairs when you leave
       if (d < fortRange(isl)) {
         f.reload -= dt;
         if (f.reload <= 0) { f.reload = 3.1 - isl.strength * 0.5; fortFire(isl); }
@@ -692,7 +862,7 @@
     }
 
     // While inside a live hostile fort's range, keep the warning up.
-    const threat = world.islands.find((i) => hostile(i.owner) && i.fort.hp > 0 &&
+    const threat = world.islands.find((i) => hostile(i.owner) && i.fort.hp > 0 && !i.siegeEndsAt &&
       dist(i.fort.x, i.fort.y, ship.x, ship.y) < fortRange(i));
     if (threat) banner(`Under fire from ${threat.name}! Turn away, or fight back with broadsides.`, true, 0.6);
 
@@ -701,13 +871,14 @@
       b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
       if (b.from === 'ship') {
         for (const isl of world.islands) {
-          if (!hostile(isl.owner) || isl.fort.hp <= 0) continue;
+          if (!hostile(isl.owner) || isl.fort.hp <= 0 || isl.siegeEndsAt) continue;
           if (dist(b.x, b.y, isl.fort.x, isl.fort.y) < 30) {
             b.life = 0; boom(b.x, b.y);
             isl.fort.hp = Math.max(0, isl.fort.hp - 10);
             if (isl.fort.hp <= 0) {
+              isl.silencedAt = Date.now();
               toast(`${isl.name}'s fort is silenced!`);
-              banner(`Slow down near ${isl.name} and land your crew to capture it.`, false, 6);
+              banner(`Slow down near ${isl.name} and land your crew before they rebuild it (${fmtTime(pace().fortRebuild)}).`, false, 6);
               puff(isl.fort.x, isl.fort.y, '#555', 18);
             }
           }
@@ -736,25 +907,11 @@
 
     // ---- capture ----
     const capIsl = capturable();
-    if (capture.isl) {
-      const ok = capIsl === capture.isl && ship.speed < 60;
-      if (!ok) { capture = { isl: null, time: 0 }; banner('Capture interrupted.', true, 2); }
-      else {
-        capture.time += dt;
-        if (capture.time >= CAPTURE_TIME) {
-          const isl = capture.isl;
-          isl.owner = 'you'; isl.fort.hp = isl.fort.maxHp;
-          capture = { isl: null, time: 0 };
-          toast(`${isl.name} is yours!`);
-          banner(`${isl.name} now produces ${RESOURCES[isl.res].label.toLowerCase()} for you.`, false, 5);
-          save();
-        }
-      }
-    }
     captureBtn.style.display = capIsl ? 'block' : 'none';
     if (capIsl) {
-      $('#captureText').textContent = capture.isl ? `Landing crew… ${Math.ceil(CAPTURE_TIME - capture.time)}` : `Capture ${capIsl.name}`;
-      captureBtn.querySelector('.fill').style.width = capture.isl ? `${(capture.time / CAPTURE_TIME) * 100}%` : '0';
+      $('#captureText').textContent = heldCount() >= HOLD_LIMIT
+        ? `Holding ${HOLD_LIMIT} islands already`
+        : `Land crew on ${capIsl.name} · ${fmtTime(pace().capture)}`;
     }
 
     produce(dt);
@@ -820,7 +977,9 @@
     ctx.moveTo(26, 0); ctx.quadraticCurveTo(12, -9, -20, -8); ctx.lineTo(-22, 0); ctx.lineTo(-20, 8); ctx.quadraticCurveTo(12, 9, 26, 0);
     ctx.fill();
     // sails (wider when sails are up)
-    const sw = 6 + ship.sail * 14;
+    // Sails flap uselessly when heading into the wind.
+    const irons = ship.sail > 0 && shipOff() > 138;
+    const sw = irons ? 5 + Math.sin(t * 25) * 2 : 6 + ship.sail * 14;
     ctx.fillStyle = '#f6efe0';
     for (const mx of [10, -8]) {
       ctx.beginPath(); ctx.ellipse(mx, 0, 4 + ship.sail * 3, sw, 0, 0, TAU); ctx.fill();
@@ -836,8 +995,9 @@
   function drawFort(isl) {
     const f = isl.fort;
     ctx.save(); ctx.translate(f.x, f.y);
-    if (isl.strength > 0 || isl.owner === 'you') {
-      if (f.hp > 0 || isl.owner === 'you') {
+    const ownFortUp = isl.owner === 'you' && (isl.home || isl.defLevel > 0);
+    if (isl.strength > 0 || ownFortUp) {
+      if ((f.hp > 0 && isl.owner !== 'you') || ownFortUp) {
         ctx.fillStyle = '#7d8388';
         ctx.fillRect(-14, -14, 28, 28);
         ctx.fillStyle = '#9aa1a6';
@@ -849,8 +1009,8 @@
         for (let i = 0; i < 6; i++) ctx.fillRect(-14 + (i * 7) % 24, -10 + (i * 11) % 20, 7, 5);
       }
     }
-    // flag: grey until scouted
-    const color = isl.scouted ? OWNERS[isl.owner].color : '#7b8a90';
+    // flag: grey until scouted, gold while your crew lays siege
+    const color = isl.siegeEndsAt ? OWNERS.you.color : isl.scouted ? OWNERS[isl.owner].color : '#7b8a90';
     ctx.strokeStyle = '#3a2a1a'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(0, -34); ctx.stroke();
     const wave = Math.sin(t * 4 + isl.id) * 2;
@@ -893,6 +1053,14 @@
       }
     }
 
+    // wind streaks
+    const wd = wind();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)'; ctx.lineWidth = 2;
+    for (const s of streaks) {
+      const len = 26 + 22 * wd.strength;
+      ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - Math.cos(wd.to) * len, s.y - Math.sin(wd.to) * len); ctx.stroke();
+    }
+
     // world edge
     ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 30;
     ctx.strokeRect(0, 0, WORLD, WORLD);
@@ -921,7 +1089,7 @@
         ctx.restore();
       }
       drawFort(isl);
-      // name label once seen
+      // name label once seen, plus siege or fort status
       if (isl.seen) {
         ctx.font = '600 15px "IBM Plex Sans", system-ui, sans-serif';
         ctx.textAlign = 'center';
@@ -930,6 +1098,14 @@
         ctx.fillText(label, isl.x + 1, isl.y + isl.r + 41);
         ctx.fillStyle = '#fff8e8';
         ctx.fillText(label, isl.x, isl.y + isl.r + 40);
+        let sub = null;
+        if (isl.siegeEndsAt) sub = `Under siege · yours in ${fmtTime((isl.siegeEndsAt - Date.now()) / 1000)}`;
+        else if (isl.owner === 'you' && !isl.home) sub = isl.defEndsAt ? `Building fort level ${isl.defLevel + 1} · ${fmtTime((isl.defEndsAt - Date.now()) / 1000)}` : isl.defLevel ? `Fort level ${isl.defLevel}` : 'No fort yet';
+        if (sub) {
+          ctx.font = '600 13px "IBM Plex Sans", system-ui, sans-serif';
+          ctx.fillStyle = isl.siegeEndsAt ? '#e7b65c' : '#cfe9ee';
+          ctx.fillText(sub, isl.x, isl.y + isl.r + 60);
+        }
       }
     }
 
@@ -1035,7 +1211,45 @@
     const seen = world.islands.filter((i) => i.seen).length;
     const pct = Math.round((explored.reduce((a, b) => a + b, 0) / explored.length) * 100);
     $('#mapStats').textContent = `${world.islands.length} islands in this world · ${seen} found · ${held} held by you · ${pct}% of the sea explored`;
+    renderMyIslands(); updatePaceButtons();
   }
+  function renderMyIslands() {
+    const rows = world.islands.filter((i) => !i.home && (i.owner === 'you' || i.siegeEndsAt));
+    const box = $('#myIslands');
+    if (!rows.length) { box.innerHTML = '<p class="muted">None yet. Capture an island to build its defenses here.</p>'; return; }
+    const now = Date.now();
+    const html = rows.map((i) => {
+      let status, btn;
+      if (i.siegeEndsAt) {
+        status = `Under siege · yours in ${fmtTime((i.siegeEndsAt - now) / 1000)}`;
+        btn = '';
+      } else if (i.defEndsAt) {
+        status = `Fort level ${i.defLevel} · building level ${i.defLevel + 1}: ${fmtTime((i.defEndsAt - now) / 1000)}`;
+        btn = '';
+      } else if (i.defLevel >= MAX_FORT) {
+        status = `Fort level ${i.defLevel} (max)`; btn = '';
+      } else {
+        const c = fortCost(i.defLevel + 1);
+        const ok = stores.timber >= c.timber && stores.iron >= c.iron;
+        status = i.defLevel ? `Fort level ${i.defLevel}` : 'No fort: raiders will take it back';
+        btn = `<button class="secondary" type="button" data-fort="${i.id}" ${ok ? '' : 'disabled'}>Fort ${i.defLevel + 1}: ${c.timber} timber${c.iron ? `, ${c.iron} iron` : ''} · ${fmtTime(pace().fortPerLevel * (i.defLevel + 1))}</button>`;
+      }
+      return `<div class="isl"><div><b>${i.name}</b> · ${RESOURCES[i.res].label}<br><span class="muted">${status}</span></div>${btn}</div>`;
+    }).join('');
+    if (box.innerHTML !== html) box.innerHTML = html;
+  }
+  $('#myIslands').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-fort]');
+    if (b) upgradeFort(world.islands[Number(b.dataset.fort)]);
+  });
+  function updatePaceButtons() {
+    document.querySelectorAll('[data-pace]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.pace === paceId)));
+    $('#paceNote').textContent = pace().note;
+  }
+  document.querySelectorAll('[data-pace]').forEach((b) => b.addEventListener('click', () => {
+    paceId = b.dataset.pace; lastRaid = Date.now(); updatePaceButtons(); renderMyIslands(); save();
+  }));
+
   function closeMap() { mapOpen = false; $('#mapOverlay').classList.remove('show'); }
   $('#closeMap').addEventListener('click', closeMap);
   mapCanvas.addEventListener('pointerdown', (e) => {
@@ -1080,10 +1294,15 @@
       .filter(([k, v]) => v > 0 || k === 'timber')
       .map(([k, v]) => `<span><b style="background:${RESOURCES[k].color}"></b>${RESOURCES[k].label} ${Math.floor(v)}</span>`)
       .join('');
-    const w = windAngle();
-    $('#windArrow').style.transform = `rotate(${(w * 180) / Math.PI + 90}deg)`;
-    const withWind = Math.cos(angDiff(ship.angle, w)) * 0.5 + 0.5;
-    $('#windText').textContent = withWind > 0.75 ? 'Wind behind you' : withWind > 0.4 ? 'Wind abeam' : 'Sailing into the wind';
+    const w = wind();
+    // The arrow is relative to the screen (north up), pointing where the wind blows.
+    $('#windArrow').style.transform = `rotate(${(w.to * 180) / Math.PI + 90}deg)`;
+    const off = shipOff();
+    const eff = polar(off);
+    $('#windText').textContent = `${pointOfSail(off)} · ${w.strength > 1 ? 'strong' : w.strength > 0.7 ? 'steady' : 'light'} wind`;
+    $('#windText').style.color = eff > 0.8 ? 'var(--ok)' : eff > 0.4 ? 'var(--parch-2)' : 'var(--raiders)';
+    $('#heldText').textContent = `Islands held: ${heldCount()} / ${HOLD_LIMIT} · speed ${Math.round(ship.speed)}`;
+    if (mapOpen) renderMyIslands();
     drawMap(mctx, mini.width, false);
   }
 
@@ -1091,10 +1310,14 @@
   // Loop
   // =================================================================
 
-  let last = performance.now(), saveTimer = 0;
+  let last = performance.now(), saveTimer = 0, timeAcc = 0;
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
+    if (running && world) {
+      timeAcc += dt;
+      if (timeAcc > 0.5) { timeAcc = 0; processTime(false); }
+    }
     if (running && !mapOpen) {
       update(dt);
       saveTimer += dt;

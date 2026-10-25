@@ -318,6 +318,31 @@ The game becomes two halves that feed each other:
 - Multiple worlds later = multiple seeds (one row per world in a `worlds` table).
 - Safer waters near the home island; stronger factions further out.
 
+### Pacing (decided 25 Oct 2026)
+The world must not be conquerable in one evening. Sailing is real-time, but everything
+that changes ownership or builds something runs on the real clock and keeps going
+offline.
+
+- **Slow, heavy ships.** Top speed only on a beam reach in a steady wind.
+- **Wind matters.** Speed by angle off the wind: fastest across it, slow close-hauled,
+  almost nothing straight into it ("in irons"). Wind turns and changes strength over time.
+- **Capturing is a siege.** Landing the crew starts a timer; the island is yours when it
+  ends, even if your ship sails away. Silenced forts rebuild if you wait too long.
+- **Limited holdings.** At most 3 islands besides the haven for now (later tied to the
+  Captain's Quarters level).
+- **Defenses.** Captured islands start without a fort. Fort levels 1–5 cost timber
+  (and iron from level 2) and take time per level. Raiders attack held islands
+  regularly; a fort at least as strong as the attack holds, otherwise the island is lost.
+- **World pace** is a per-world setting:
+
+| | Dev (testing) | Live |
+|---|---|---|
+| Ship speed | 3× | 1× |
+| Siege | 5 seconds | 30 minutes |
+| Fort level N | 3 s × N | 20 min × N |
+| Raid attempts | every minute | every 3 hours |
+| Silenced fort rebuilds | 45 seconds | 2 hours |
+
 ### Prototype
 `prototypes/sailing/index.html` is a playable single-file test of this loop (plain JS
 canvas, open it in a browser). It proves the feel before it is rebuilt in the app.
