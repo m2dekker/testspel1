@@ -121,6 +121,15 @@
   .entry .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .react { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 10px; font-size: 13px; }
   .react[aria-pressed="true"] { border-color: var(--cobalt); background: var(--cobalt-soft); font-weight: 700; }
+  .who { display: flex; align-items: center; gap: 12px; }
+  .who svg { width: 60px; height: 60px; flex: none; }
+  .photo { width: 100%; height: auto; display: block; border-radius: 12px; margin-top: 8px; aspect-ratio: 320 / 200; max-width: 100%; }
+  .now .photo { margin-top: 0; }
+  .av-preview { display: flex; justify-content: center; }
+  .av-preview svg { width: 140px; height: 140px; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+  .swatch { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--line); padding: 0; }
+  .swatch[aria-pressed="true"] { border: 3px solid var(--cobalt); }
   .postcard {
     margin-top: 8px; padding: 14px; border-radius: 12px; background: var(--cobalt-soft);
     font-family: var(--font-display); font-size: 19px; line-height: 1.4; white-space: pre-wrap;
@@ -158,7 +167,7 @@
       <div class="top">
         <div>
           <div class="eyebrow">Elsewhere · Lisbon</div>
-          <h1 id="cloneName">Clone</h1>
+          <div class="who"><span id="headAvatar"></span><h1 id="cloneName">Clone</h1></div>
         </div>
         <div class="clock">
           <span class="muted small" id="dayLabel">Day 1</span>
@@ -178,6 +187,7 @@
           <h3>Right now</h3>
           <span class="muted small mono" id="nowUntil"></span>
         </div>
+        <div id="nowPhoto"></div>
         <div class="what" id="nowWhat">…</div>
         <div class="muted small" id="nowWhere"></div>
         <div class="bar"><i id="nowBar"></i></div>
@@ -795,6 +805,89 @@
   }
 
   // =====================================================================
+  // Avatar (placeholder until realistic photos) and "photo" scenes
+  // =====================================================================
+  const AV = {
+    skin: ['#f6d3b3', '#e8b48f', '#c98e64', '#9a6440', '#6b4229'],
+    hairColor: ['#1f1a17', '#5b3a24', '#d9b26a', '#a5482a', '#a9a9a9'],
+    hair: [['short', 'Short'], ['long', 'Long'], ['curly', 'Curly'], ['bun', 'Bun'], ['buzz', 'Buzz']],
+    extra: [['none', 'Nothing'], ['glasses', 'Glasses'], ['shades', 'Sunglasses'], ['cap', 'Cap']],
+    shirt: ['#1f4fa3', '#f2b705', '#2e8b57', '#c2412d', '#2b2b2b'],
+  };
+  const DEFAULT_AV = { skin: 1, hair: 'short', hairColor: 1, extra: 'none', shirt: 0 };
+  let avSeq = 0;
+
+  // Returns SVG markup for a 100×100 avatar, to place inside any <svg> or <g>.
+  function avatarMarkup(a, bg) {
+    a = { ...DEFAULT_AV, ...(a || {}) };
+    const id = 'av' + (avSeq++);
+    const skin = AV.skin[a.skin], hc = AV.hairColor[a.hairColor], shirt = AV.shirt[a.shirt];
+    const back = a.hair === 'long' ? `<path d="M27 42 Q27 20 50 19 Q73 20 73 42 L76 84 L24 84 Z" fill="${hc}"/>` : '';
+    const top = {
+      short: `<path d="M29 44 Q28 18 50 17 Q72 18 71 44 Q67 30 50 29 Q33 30 29 44 Z" fill="${hc}"/>`,
+      long: `<path d="M29 46 Q28 18 50 17 Q72 18 71 46 Q66 29 50 28 Q34 29 29 46 Z" fill="${hc}"/>`,
+      curly: [[34, 26], [42, 20], [50, 18], [58, 20], [66, 26], [70, 35], [30, 35]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="8" fill="${hc}"/>`).join(''),
+      bun: `<circle cx="50" cy="13" r="8" fill="${hc}"/><path d="M29 42 Q28 19 50 18 Q72 19 71 42 Q66 29 50 28 Q34 29 29 42 Z" fill="${hc}"/>`,
+      buzz: `<path d="M30 38 Q30 21 50 20 Q70 21 70 38 Q65 29 50 28 Q35 29 30 38 Z" fill="${hc}" opacity="0.75"/>`,
+    }[a.hair];
+    const extra = {
+      none: '',
+      glasses: `<g fill="none" stroke="#1d1d1d" stroke-width="2"><circle cx="42" cy="46" r="6"/><circle cx="58" cy="46" r="6"/><path d="M48 46 L52 46"/></g>`,
+      shades: `<g fill="#1d1d1d"><rect x="34" y="41" width="14" height="9" rx="3"/><rect x="52" y="41" width="14" height="9" rx="3"/><rect x="47" y="43" width="6" height="2"/></g>`,
+      cap: `<path d="M28 36 Q30 16 50 16 Q70 16 72 36 Z" fill="#f2b705"/><path d="M60 34 Q78 33 84 38 L60 38 Z" fill="#d79d00"/>`,
+    }[a.extra];
+    const eyes = a.extra === 'shades' ? '' : `<circle cx="42" cy="46" r="2.3" fill="#1d1d1d"/><circle cx="58" cy="46" r="2.3" fill="#1d1d1d"/>`;
+    return `<defs><clipPath id="${id}"><circle cx="50" cy="50" r="48"/></clipPath></defs>` +
+      `<g clip-path="url(#${id})"><rect width="100" height="100" fill="${bg || '#dfe9f8'}"/>${back}` +
+      `<path d="M18 100 Q20 76 50 74 Q80 76 82 100 Z" fill="${shirt}"/><rect x="44" y="62" width="12" height="13" fill="${skin}"/>` +
+      `<ellipse cx="50" cy="45" rx="20" ry="23" fill="${skin}"/>${top}${eyes}` +
+      `<path d="M43 56 Q50 62 57 56" stroke="#7a3b2e" stroke-width="2.2" fill="none" stroke-linecap="round"/>` +
+      `<circle cx="38" cy="54" r="3" fill="#e88a7a" opacity="0.35"/><circle cx="62" cy="54" r="3" fill="#e88a7a" opacity="0.35"/>${extra}</g>` +
+      `<circle cx="50" cy="50" r="48" fill="none" stroke="#ffffff" stroke-width="3"/>`;
+  }
+  const avatarSvg = (a, label) => `<svg viewBox="0 0 100 100" role="img" aria-label="${esc(label || 'Avatar')}">${avatarMarkup(a)}</svg>`;
+
+  // A drawn "photo" of a moment: sky by time of day, a scene by activity, the avatar in front.
+  function scenePhoto(e, a) {
+    const h = hourOf(e.t);
+    const sky = h < 6 || h >= 21.5 ? ['#0f1b3d', '#2a3f73'] : h < 8 ? ['#f3a683', '#f7d9b5'] : h < 17 ? ['#6db6ea', '#d3ecfa']
+      : h < 19.5 ? ['#ee8459', '#f7c873'] : ['#3d3b73', '#d9775c'];
+    const night = h < 6 || h >= 21.5;
+    const id = 'sc' + (avSeq++);
+    const roofs = [0, 40, 78, 120, 165, 205, 250, 290].map((x, i) => `<rect x="${x}" y="${92 - (i % 3) * 10}" width="38" height="${60 + (i % 3) * 10}" fill="${['#e9dccb', '#f1c9a5', '#dfe7ef'][i % 3]}"/><path d="M${x - 2} ${92 - (i % 3) * 10} L${x + 19} ${80 - (i % 3) * 10} L${x + 40} ${92 - (i % 3) * 10} Z" fill="#c4613c"/>`).join('');
+    const river = `<rect y="150" width="320" height="50" fill="#2f78b0"/><path d="M0 158 Q40 152 80 158 T160 158 T240 158 T320 158" stroke="#9fd0f0" stroke-width="2" fill="none"/>`;
+    const byAct = {
+      tram: `${roofs}<rect x="150" y="112" width="120" height="44" rx="8" fill="#f2b705"/><rect x="160" y="120" width="22" height="16" fill="#cfe8f7"/><rect x="190" y="120" width="22" height="16" fill="#cfe8f7"/><rect x="220" y="120" width="22" height="16" fill="#cfe8f7"/><rect x="150" y="150" width="120" height="6" fill="#7a5a00"/><path d="M0 170 L320 160 L320 200 L0 200 Z" fill="#a39e94"/>`,
+      castle: `<path d="M0 200 L0 130 Q120 95 320 120 L320 200 Z" fill="#6a9a4f"/><path d="M90 128 h20 v-10 h10 v10 h20 v-10 h10 v10 h20 v-10 h10 v10 h20 v40 h-110 Z" fill="#a08f7c"/>`,
+      sintra: `<path d="M0 200 L0 120 Q160 60 320 110 L320 200 Z" fill="#4f7d3a"/><rect x="150" y="70" width="70" height="40" fill="#d8b04a"/><rect x="180" y="52" width="16" height="22" fill="#c2412d"/><circle cx="215" cy="66" r="10" fill="#e9dccb"/><rect x="0" y="0" width="320" height="200" fill="#ffffff" opacity="0.18"/>`,
+      surf: `<rect y="120" width="320" height="80" fill="#2f78b0"/><path d="M0 130 Q30 112 60 130 T120 130 T180 130 T240 130 T300 130 T360 130" stroke="#ffffff" stroke-width="5" fill="none"/><rect x="180" y="110" width="110" height="14" rx="7" fill="#f2b705" transform="rotate(-12 235 117)"/>`,
+      cascais: `<rect y="135" width="320" height="65" fill="#2f78b0"/><rect y="170" width="320" height="30" fill="#ead6a4"/><circle cx="270" cy="40" r="18" fill="#fff4c2"/>`,
+      belem: `${river}<rect x="190" y="70" width="40" height="80" fill="#e6dccd"/><rect x="198" y="56" width="24" height="16" fill="#e6dccd"/><path d="M196 56 L210 44 L224 56 Z" fill="#cbbfae"/>`,
+    };
+    const byCat = {
+      nature: `${roofs}${river}<path d="M200 150 L210 112 L290 112 L300 150" stroke="#c2412d" stroke-width="4" fill="none"/><path d="M210 112 L210 150 M290 112 L290 150" stroke="#c2412d" stroke-width="5"/>`,
+      culture: byAct.castle,
+      sight: roofs + '<path d="M0 160 L320 150 L320 200 L0 200 Z" fill="#a39e94"/>',
+      food: `<rect y="120" width="320" height="80" fill="#8a5a3b"/><ellipse cx="220" cy="150" rx="46" ry="16" fill="#ffffff"/><ellipse cx="220" cy="147" rx="28" ry="9" fill="${e.act === 'sardines' ? '#9aa4ad' : '#e6a64b'}"/><rect x="278" y="118" width="14" height="30" rx="3" fill="#cfe8f7" opacity="0.8"/>`,
+      nightlife: `<rect y="70" width="320" height="130" fill="#1b2240"/>${[20, 60, 100, 140, 180, 220, 260, 300].map((x, i) => `<circle cx="${x}" cy="${78 + (i % 2) * 6}" r="4" fill="#f7d36b"/>`).join('')}<path d="M0 78 Q160 96 320 78" stroke="#555" fill="none"/>`,
+      adventure: byAct.surf,
+      rest: `<rect x="150" y="30" width="140" height="110" fill="${sky[1]}" stroke="#7a5a3b" stroke-width="8"/><path d="M220 30 L220 140 M150 85 L290 85" stroke="#7a5a3b" stroke-width="5"/><rect y="150" width="320" height="50" fill="#e9dccb"/>`,
+      shopping: `${roofs}<rect x="160" y="110" width="140" height="60" fill="#5b3a24"/><rect x="170" y="118" width="120" height="44" fill="#f1c9a5"/>`,
+      work: `<rect y="125" width="320" height="75" fill="#6b4226"/><rect x="200" y="105" width="22" height="24" rx="4" fill="#ffffff"/><path d="M222 112 q10 0 10 8 q0 8 -10 8" stroke="#ffffff" stroke-width="3" fill="none"/>`,
+      social: `${roofs}<g transform="translate(200,92) scale(0.95)">${avatarMarkup({ skin: ((a?.skin ?? 1) + 2) % 5, hair: 'curly', hairColor: 3, extra: 'none', shirt: 2 }, '#f3e9da')}</g>`,
+      travel: `<rect y="150" width="320" height="50" fill="#9a9a9a"/><path d="M170 60 L280 50 L292 58 L180 72 Z M220 56 L200 30 L214 30 L240 54 Z M210 66 L196 86 L208 86 L228 64 Z" fill="#ffffff"/>`,
+      note: roofs,
+    };
+    const scene = byAct[e.act] || byCat[e.cat] || roofs;
+    const stars = night ? [[30, 20], [80, 40], [130, 15], [210, 30], [260, 18], [300, 45]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.6" fill="#ffffff"/>`).join('') : '';
+    return `<svg class="photo" viewBox="0 0 320 200" role="img" aria-label="Placeholder photo: ${esc(e.title)}">` +
+      `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient></defs>` +
+      `<rect width="320" height="200" fill="url(#${id})"/>${stars}${scene}` +
+      `<g transform="translate(14,96)">${avatarMarkup(a, sky[1])}</g>` +
+      `<rect x="222" y="178" width="92" height="16" rx="8" fill="#000000" opacity="0.35"/><text x="268" y="190" text-anchor="middle" font-size="10" fill="#ffffff" font-family="Manrope, sans-serif">AI clone · sketch</text></svg>`;
+  }
+
+  // =====================================================================
   // Map
   // =====================================================================
   // Zoomed on central Lisbon; places outside (airport, day trips) are pinned to the edge.
@@ -828,7 +921,7 @@
       `<line x1="${bx1}" y1="${by1}" x2="${bx2}" y2="${by2}" stroke="var(--bad)" stroke-width="5" opacity="0.55"/>` +
       labels +
       `<polyline id="trail" fill="none" stroke="var(--tram)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>` +
-      `<g id="me"><circle class="pulse" r="14" fill="var(--cobalt)"/><circle r="10" fill="var(--cobalt)" stroke="var(--surface)" stroke-width="3"/></g>`;
+      `<g id="me"><circle class="pulse" r="34" fill="var(--cobalt)"/><g transform="translate(-30,-30) scale(0.6)">${avatarMarkup(clone && clone.avatar)}</g></g>`;
   }
   function edgePoint(lat, lng) {
     // Project off-map places onto the map edge, toward their direction.
@@ -870,6 +963,7 @@
     simulate(c, t);
 
     $('#cloneName').textContent = c.name;
+    if (!$('#headAvatar').firstChild) $('#headAvatar').innerHTML = avatarSvg(c.avatar, `${c.name}'s clone`);
     $('#dayLabel').textContent = `Day ${dayOf(t)} · Lisbon`;
     $('#clockTime').textContent = hhmm(t);
     $('#speedLabel').textContent = `${c.speed}× real time`;
@@ -886,6 +980,7 @@
       const pos = positionAt(c, t);
       $('#nowWhat').textContent = pos.moving ? `On the way to ${AREAS[cur.area].name}` : cur.sleep ? cur.title.replace('Night at', 'Asleep at') : cur.title;
       $('#nowWhere').textContent = `${AREAS[cur.area].name}${cur.cost ? ' · ' + euro(cur.cost) : ''}${cur.earn ? ' · earning ' + euro(cur.earn) : ''}`;
+      if ($('#nowPhoto').dataset.id !== cur.id) { $('#nowPhoto').dataset.id = cur.id; $('#nowPhoto').innerHTML = scenePhoto(cur, c.avatar); }
       const pct = clamp((t - cur.t) / (cur.end - cur.t), 0, 1);
       $('#nowBar').style.width = (pct * 100).toFixed(1) + '%';
       $('#nowUntil').textContent = `until ${hhmm(cur.end)} · ${realDur(cur.end - t, c.speed)} real`;
@@ -951,8 +1046,9 @@
             <button class="react" type="button" data-react="meh" data-id="${e.id}" aria-pressed="${e.react === 'meh'}">Meh</button>
             ${canPost ? `<button class="react" type="button" data-post="${e.id}">${e.postcard ? 'Postcard' : 'Read postcard'}</button>` : ''}
           </div>`;
+        const photo = (e.hl || e.act === 'meet') && !e.sleep ? scenePhoto(e, c.avatar) : '';
         const pc = e.postcard && openPostcards.has(e.id) ? `<div class="postcard">${esc(e.postcard)}</div>` : `<div class="postcard" data-pc="${e.id}" hidden></div>`;
-        html += `<div class="entry ${e.hl ? 'hl' : ''}"><time>${hhmm(e.t)}</time><div><div class="t">${esc(e.title)}</div><div class="meta">${meta.join('')}</div>${why}${tick}${acts}${pc}</div></div>`;
+        html += `<div class="entry ${e.hl ? 'hl' : ''}"><time>${hhmm(e.t)}</time><div><div class="t">${esc(e.title)}</div><div class="meta">${meta.join('')}</div>${why}${tick}${photo}${acts}${pc}</div></div>`;
       }
       html += '</div></div>';
     }
@@ -978,11 +1074,11 @@
   // =====================================================================
   // Setup flow
   // =====================================================================
-  const setup = { step: 0, answers: [], name: '', budget: 1500, speed: 30 };
+  const setup = { step: 0, answers: [], name: '', budget: 1500, speed: 30, avatar: { ...DEFAULT_AV } };
 
   function renderSetup() {
     $('#setup').hidden = false; $('#game').hidden = true; $('#loading').hidden = true;
-    const total = QUESTIONS.length + 2;
+    const total = QUESTIONS.length + 3;
     $('#setupProgress').style.width = `${(setup.step / total) * 100}%`;
     const body = $('#setupBody');
     if (setup.step === 0 && setup.answers.length === 0 && !setup.started) {
@@ -1016,10 +1112,33 @@
       $('#nextBtn').onclick = () => { setup.name = $('#nameIn').value.trim() || 'You'; setup.step++; renderSetup(); };
       return;
     }
+    if (setup.step === QUESTIONS.length + 1) {
+      const a = setup.avatar;
+      $('#setupTitle').textContent = 'What does it look like?';
+      const sw = (key, colors) => `<div class="swatches">${colors.map((col, i) => `<button class="swatch" type="button" data-av="${key}" data-v="${i}" style="background:${col}" aria-label="${key} ${i + 1}" aria-pressed="${a[key] === i}"></button>`).join('')}</div>`;
+      const ch = (key, list) => `<div class="chips">${list.map(([v, l]) => `<button class="chip" type="button" data-av="${key}" data-v="${v}" aria-pressed="${a[key] === v}">${l}</button>`).join('')}</div>`;
+      body.innerHTML = `<div style="display:flex;flex-direction:column;gap:14px">
+        <div class="av-preview">${avatarSvg(a, 'Your clone')}</div>
+        <p class="muted small">A simple avatar for now. Later this becomes a realistic look made from your own photos.</p>
+        <div><p style="margin-bottom:8px">Skin</p>${sw('skin', AV.skin)}</div>
+        <div><p style="margin-bottom:8px">Hair</p>${ch('hair', AV.hair)}</div>
+        <div><p style="margin-bottom:8px">Hair colour</p>${sw('hairColor', AV.hairColor)}</div>
+        <div><p style="margin-bottom:8px">Extra</p>${ch('extra', AV.extra)}</div>
+        <div><p style="margin-bottom:8px">Favourite shirt</p>${sw('shirt', AV.shirt)}</div>
+        <button class="btn" type="button" id="avNext">Next</button></div>`;
+      body.querySelectorAll('[data-av]').forEach((b) => b.onclick = () => {
+        const k = b.dataset.av;
+        a[k] = ['skin', 'hairColor', 'shirt'].includes(k) ? Number(b.dataset.v) : b.dataset.v;
+        renderSetup();
+      });
+      $('#avNext').onclick = () => { setup.step++; renderSetup(); };
+      return;
+    }
     // Summary
     const traits = traitsFromAnswers();
     $('#setupTitle').textContent = `Meet ${setup.name}'s clone`;
     body.innerHTML = `<div style="display:flex;flex-direction:column;gap:14px">
+      <div class="av-preview">${avatarSvg(setup.avatar, 'Your clone')}</div>
       <div class="traits">${Object.entries(TRAITS).map(([k, [lo, hi]]) => `<div class="trait"><span>${lo}</span><span class="bar"><i style="left:${(traits[k] * 100).toFixed(0)}%"></i></span><span>${hi}</span></div>`).join('')}</div>
       <p class="muted small">Budget ${euro(setup.budget)} · ${setup.speed}× real time · first stop: Lisbon</p>
       <p class="muted small">Postcards and diary entries are written by Claude when you tap them. The first time, you'll be asked to allow that.</p>
@@ -1027,9 +1146,14 @@
       <button class="btn ghost" type="button" id="backBtn">Change my answers</button></div>`;
     $('#flyBtn').onclick = async () => {
       clone = newClone(setup.name, traits, setup.budget, setup.speed);
+      clone.avatar = { ...setup.avatar };
       markDirty(); await flush(); startGame();
     };
     $('#backBtn').onclick = () => { setup.step = 0; setup.answers = []; setup.started = true; renderSetup(); };
+    const editAv = document.createElement('button');
+    editAv.className = 'btn ghost'; editAv.type = 'button'; editAv.textContent = 'Change its look';
+    editAv.onclick = () => { setup.step = QUESTIONS.length + 1; renderSetup(); };
+    $('#backBtn').after(editAv);
   }
 
   function traitsFromAnswers() {
@@ -1045,6 +1169,7 @@
   // =====================================================================
   function startGame() {
     $('#setup').hidden = true; $('#loading').hidden = true; $('#game').hidden = false;
+    $('#headAvatar').innerHTML = '';
     drawMapBase();
     $('#speedChips').innerHTML = SPEEDS.map(([v, l]) => `<button class="chip" type="button" data-speed="${v}" aria-pressed="${clone.speed === v}">${l}</button>`).join('');
     $('#saveNote').textContent = docRef ? 'Saved to your account: your clone keeps living while this page is closed.'
@@ -1085,7 +1210,7 @@
       return;
     }
     await store.clear(); clone = null; dirty = false;
-    Object.assign(setup, { step: 0, answers: [], started: false });
+    Object.assign(setup, { step: 0, answers: [], started: false, avatar: { ...DEFAULT_AV } });
     renderSetup();
   });
 

@@ -85,6 +85,9 @@ player stays predictable.
 `prototypes/lisbon/index.html` is a playable single-file test:
 
 - Questionnaire → personality → name, budget and test speed (3×, 30×, 300×)
+- A simple avatar builder (skin, hair, colour, glasses or cap, shirt) as a placeholder
+  for the realistic look; it appears in the header, as the map marker, and in drawn
+  "sketch" photos of each highlight
 - The clone lives in Lisbon on its own clock, also while the page is closed
 - Live map of central Lisbon with today's trail; day trips (Sintra, Cascais, Costa da
   Caparica) are pinned to the map edge
@@ -95,6 +98,7 @@ player stays predictable.
 ## Open questions
 
 - How many AI photos per day are affordable (Hitchfield credits per image)?
+- Real map data: needs OpenStreetMap access (`overpass-api.de`) from the build environment
 - When does the clone leave Lisbon, and who decides where it goes next?
 - How do real friends' clones find each other (contacts, invite links, nearby)?
 - What exactly is free and what is paid?
