@@ -139,6 +139,15 @@
   }
   .postcard.wait { font-family: var(--font-body); font-size: 14px; color: var(--muted); }
   .note { font-size: 13px; color: var(--muted); font-style: italic; }
+  .voice { font-family: var(--font-display); font-size: 19px; line-height: 1.35; }
+  .entry .voice { font-size: 17px; margin-top: 4px; }
+  .story { margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: var(--cobalt-soft); font-size: 14px; }
+  .plan { margin: 0; padding: 0; display: grid; gap: 2px; }
+  .plan li { list-style: none; display: grid; grid-template-columns: 82px 1fr; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .plan li:first-child { border-top: 0; }
+  .plan li > span:first-child { color: var(--muted); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; padding-top: 2px; }
+  .plan li.did > span:last-child { color: var(--good); font-weight: 600; }
+  .plan li.skip > span:last-child { color: var(--muted); text-decoration: line-through; }
   .bucket li { padding: 10px 0; border-top: 1px solid var(--line); list-style: none; display: flex; gap: 10px; }
   .bucket li:first-child { border-top: 0; }
   .bucket ul { padding: 0; margin: 0; }
@@ -195,6 +204,8 @@
         <div class="muted small" id="nowWhere"></div>
         <div class="bar"><i id="nowBar"></i></div>
       </div>
+
+      <div class="card" id="planCard" aria-live="polite"></div>
 
       <div class="card" style="padding:10px; gap:8px">
         <span class="away" id="awayBadge" hidden></span>
@@ -471,7 +482,7 @@
       money: budget, energy: 85, mood: 0.7,
       stayArea: stay.area,
       learned: {}, friends: {},
-      bucket: [], events: [], diaries: {}, question: null,
+      bucket: [], events: [], diaries: {}, question: null, plans: {},
       sim: { cursor: 8 * H, slot: 'arrive', day: 1, recent: [], lastDone: {}, lastTripDay: -9 },
       helpAskedDay: 0, workUntilDay: 0,
     };
@@ -532,13 +543,17 @@
     // Your answer to today's question decides this slot.
     const q = c.question;
     if (q && q.kind === 'choice' && q.day === day && q.slot === slot) {
-      const chosenId = q.answer || q.options.slice().sort((x, y) => affinity(c, ACT[y]) - affinity(c, ACT[x]))[0];
+      const planned = c.plans?.[day]?.slots?.[slot];
+      const chosenId = q.answer || (q.options.includes(planned) ? planned : q.options.slice().sort((x, y) => affinity(c, ACT[y]) - affinity(c, ACT[x]))[0]);
       const a = ACT[chosenId];
       const by = q.answer ? 'you' : 'gut';
       if (q.answer) c.learned[a.cat] = clamp((c.learned[a.cat] || 0) + 0.12, -0.6, 0.8);
       c.question = null;
       if (a.cost[0] <= c.money) return { act: a, reason: by };
     }
+    // Its own (AI-made) plan for this slot, if it still works out.
+    const p = plannedAct(c, slot, t);
+    if (p) return { act: p, reason: 'plan' };
     const candidates = ACTS.filter((a) => !a.work && a.slots.includes(slot) && (!a.early || hourOf(t) < 8.5))
       .filter((a) => a.cost[0] <= c.money - (broke ? 0 : 40))
       .filter((a) => !(a.spans && !tripAllowed(c, day)))
@@ -567,7 +582,7 @@
     return { area: areaId, lat: ar.lat + rnd(-0.0012, 0.0012), lng: ar.lng + rnd(-0.0015, 0.0015) };
   }
 
-  function runAct(c, a, t, reason) {
+  function runAct(c, a, t, reason, slot) {
     const v = a.venue ? venue(a.venue) : null;
     const dur = rnd(a.dur[0], a.dur[1]) * H;
     let cost = Math.round(rnd(a.cost[0], a.cost[1]));
@@ -598,7 +613,7 @@
     const e = {
       id: Math.random().toString(36).slice(2, 9), t, end: t + dur, act: a.id, cat: a.cat,
       title: a.title(v), area: place.area, lat: place.lat, lng: place.lng,
-      cost, earn, mood: m, reason, ticked,
+      cost, earn, mood: m, reason, ticked, slot,
       hl: !!ticked || m > 0.84 || (a.big && m > 0.7),
     };
     addEvent(c, e);
@@ -652,6 +667,19 @@
       return;
     }
     if (c.question && c.question.kind === 'help') return;
+    // The question its AI plan wanted to ask, if both options still work today.
+    const aiq = c.plans?.[day]?.question;
+    if (aiq) {
+      const [qa, qb] = aiq.options.map((x) => ACT[x]);
+      const ok = (x) => day - (c.sim.lastDone[x.id] ?? -9) >= 4 && x.cost[0] <= c.money - 40 && (!x.spans || tripAllowed(c, day));
+      if (ok(qa) && ok(qb)) {
+        const slot = slotOf(qa);
+        c.question = { kind: 'choice', day, slot, text: aiq.text, options: [qa.id, qb.id], labels: [cap(qa.short), cap(qb.short)], answer: null,
+          deadline: (day - 1) * DAY + { morning: 9.5, afternoon: 14, dinner: 20, night: 22 }[slot] * H };
+        markDirty();
+        return;
+      }
+    }
     // Otherwise: a choice between two big things for today.
     const dayTrip = Math.random() < 0.5 && tripAllowed(c, day);
     const pool = ACTS.filter((a) => a.big && day - (c.sim.lastDone[a.id] ?? -9) >= 4 && a.cost[0] <= c.money - 40 &&
@@ -659,7 +687,6 @@
     if (pool.length < 2) { c.question = null; return; }
     const sorted = pool.map((a) => [a, affinity(c, a) + Math.random()]).sort((x, y) => y[1] - x[1]);
     const [a, b] = [sorted[0][0], sorted[1 + Math.floor(Math.random() * Math.min(2, sorted.length - 1))][0]];
-    const slotOf = (x) => x.spans ? 'morning' : x.slots.includes('afternoon') ? 'afternoon' : x.slots.includes('dinner') ? 'dinner' : 'night';
     if (slotOf(a) !== slotOf(b)) { c.question = null; return; }
     const slot = slotOf(a);
     const deadlineHour = { morning: 9.5, afternoon: 14, dinner: 20, night: 22 }[slot];
@@ -668,6 +695,7 @@
     markDirty();
   }
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  function slotOf(x) { return x.spans ? 'morning' : x.slots.includes('afternoon') ? 'afternoon' : x.slots.includes('dinner') ? 'dinner' : 'night'; }
 
   // Advance the simulation up to clone time `until`. Creates events whose start <= until.
   function simulate(c, until) {
@@ -706,13 +734,14 @@
       }
       if (s === 'breakfast') c.sim.skip = null;
       // Night out only for night owls with energy; otherwise bed.
-      if (s === 'night' && (c.energy < 30 || Math.random() > 0.2 + c.traits.nightOwl * 0.6 + c.traits.social * 0.2)) {
+      const pn = c.plans?.[dayOf(t)]?.slots?.night;
+      if (s === 'night' && (c.energy < 30 || pn === 'sleep' || (!plannedAct(c, 'night', t) && Math.random() > 0.2 + c.traits.nightOwl * 0.6 + c.traits.social * 0.2))) {
         c.sim.slot = 'sleep';
         continue;
       }
       const choice = chooseAct(c, s, t);
       if (!choice || !choice.act) { c.sim.cursor = t + 0.5 * H; c.sim.slot = SLOT_ORDER[SLOT_ORDER.indexOf(s) + 1]; continue; }
-      c.sim.cursor = runAct(c, choice.act, t, choice.reason);
+      c.sim.cursor = runAct(c, choice.act, t, choice.reason, s);
       if (choice.act.spans) c.sim.skip = choice.act.spans;
       c.sim.slot = SLOT_ORDER[SLOT_ORDER.indexOf(s) + 1];
     }
@@ -805,6 +834,193 @@
       el.className = 'postcard wait';
       el.textContent = err.code === 'not_granted' || err.code === 'sampling_disabled' ? 'The diary needs permission to use Claude on this page.' : 'The diary did not come through. Try again.';
     } finally { btn.disabled = false; }
+  }
+
+  // =====================================================================
+  // AI check-in: the clone's mind. About once per clone day Claude plans
+  // its next days, writes its journal lines and tells what happened when it
+  // met other clones. The rules above carry out the plan and keep the books.
+  // =====================================================================
+  const ACT_LABEL = {
+    nata: 'Pastel de nata and a bica', slowcoffee: 'Slow coffee, people-watching', sunrise: 'Sunrise from a miradouro',
+    tram: 'Ride Tram 28', castle: 'São Jorge Castle', belem: 'Belém: the tower and the monastery', tiles: 'National Tile Museum',
+    tileclass: 'Tile-painting class', lx: 'Bookshops in an old Alcântara factory', bookshop: 'An old bookshop in Chiado',
+    river: 'Walk along the river', miradouro: 'Sunset from a miradouro', nap: 'Siesta', foodhall: 'Food hall by the river',
+    bifana: 'A bifana and a beer', pratododia: 'Prato do dia at a tasca', sardines: 'Grilled sardines', tasting: 'Tasting menu',
+    fado: 'Live fado', rooftop: 'Rooftop cocktails', bairro: 'Street party in Bairro Alto', pinkstreet: 'Drinks on the pink street',
+    surf: 'Surf lesson at Caparica', sintra: 'Day trip to Sintra', cascais: 'Day trip to Cascais', wander: 'Get lost in the alleys',
+    market: 'Morning market', work: 'Café shift', meet: 'Met another clone', arrive: 'Landed in Lisbon',
+  };
+  const actLabel = (id) => id === 'sleep' ? 'Early night' : id === 'free' ? 'See how it feels' : ACT_LABEL[id] || id;
+  const PLAN_SLOTS = SLOT_ORDER.slice(0, 7);
+  const SLOT_NAME = { breakfast: 'Breakfast', morning: 'Morning', lunch: 'Lunch', afternoon: 'Afternoon', sunset: 'Sunset', dinner: 'Dinner', night: 'Night' };
+  const PLAN_DAYS = 3;
+  const AI_OFF = ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'];
+  const checkIn = { busy: false, autoUsed: false, error: '' };
+
+  // The planned activity for this slot, if it still works out (money, energy, variety).
+  function plannedAct(c, slot, t) {
+    const day = dayOf(t);
+    const a = ACT[c.plans?.[day]?.slots?.[slot]];
+    if (!a || a.work || !a.slots.includes(slot)) return null;
+    if (a.cost[0] > c.money) return null;
+    if (a.spans && !tripAllowed(c, day)) return null;
+    if (a.big && day - (c.sim.lastDone[a.id] ?? -9) < 4) return null;
+    if (a.early && hourOf(t) >= 8.5) return null;
+    return a;
+  }
+
+  const linesDue = (c, t) => c.events.filter((e) => e.t <= t && t - e.t < 2 * DAY && !e.sleep && !e.side && !e.line && !e.lineTried).slice(-14);
+  const meetsDue = (c, t) => c.events.filter((e) => e.t <= t && t - e.t < 2 * DAY && e.act === 'meet' && !e.story && !e.storyTried).slice(-3);
+  function needsCheckIn(c) {
+    const t = cloneNow(c), d = dayOf(t);
+    return !c.plans?.[d] || !c.plans?.[d + 1] || linesDue(c, t).length >= 5 || meetsDue(c, t).length > 0;
+  }
+
+  function checkInPrompt(c, t, lines, meets) {
+    const d = dayOf(t);
+    const nextSlot = c.sim.day === d && PLAN_SLOTS.includes(c.sim.slot) ? c.sim.slot : c.sim.day > d ? null : 'breakfast';
+    const recent = c.events.filter((e) => e.t <= t && dayOf(e.t) >= d - 2 && !e.sleep).slice(-30)
+      .map((e) => `day ${dayOf(e.t)} ${hhmm(e.t)} ${e.title}${e.cost ? ` (${euro(e.cost)})` : ''}${e.react === 'love' ? ` [${c.name} loved this]` : e.react === 'meh' ? ` [${c.name} found this meh]` : ''}`);
+    const open = c.bucket.filter((b) => !b.done).map((b) => b.text);
+    const done = c.bucket.filter((b) => b.done).map((b) => b.text);
+    const learned = Object.entries(c.learned).filter(([, v]) => Math.abs(v) > 0.05).map(([k, v]) => `${v > 0 ? 'more' : 'less'} ${k}`);
+    const friends = Object.entries(c.friends).map(([n, f]) => `${n} (from ${f.city}, met ${f.meets}×)`);
+    const menu = ACTS.filter((a) => !a.work).map((a) => {
+      const last = c.sim.lastDone[a.id];
+      return `${a.id} | ${a.slots.join('/')} | ${a.cost[1] ? `€${a.cost[0]}${a.cost[1] !== a.cost[0] ? '–' + a.cost[1] : ''}` : 'free'} | ${actLabel(a.id)}` +
+        `${a.spans ? ' | TRIP' : ''}${a.big ? ' | BIG' : ''}${a.bucket ? ` | bucket: ${BUCKET[a.bucket]}` : ''}${last ? ` | last done day ${last}` : ''}`;
+    }).join('\n');
+    const days = Array.from({ length: PLAN_DAYS }, (_, i) => d + i);
+    const lineList = lines.map((e) => `${e.id} | day ${dayOf(e.t)} ${hhmm(e.t)} | ${AREAS[e.area].name} | ${e.title} | felt ${moodWord(e.mood).toLowerCase()}${e.cost ? ` | ${euro(e.cost)}` : ''}${e.earn ? ` | earned ${euro(e.earn)}` : ''}${e.ticked ? ` | ticked off bucket list: ${e.ticked}` : ''}`).join('\n');
+    const meetList = meets.map((e) => `${e.id} | day ${dayOf(e.t)} ${hhmm(e.t)} | ${AREAS[e.area].name} | ${e.title} | times met so far: ${c.friends[e.friend]?.meets ?? 1}`).join('\n');
+    return `${persona(c)}
+
+You are this clone's mind: you decide how it spends its days in Lisbon. ${c.name} reads everything you write.
+
+NOW: day ${d}, ${hhmm(t)}. Money ${euro(c.money)} (its bed costs about ${euro(stayFor(c).cost)} a night). Energy ${Math.round(c.energy)}/100. Mood ${moodWord(c.mood).toLowerCase()}.
+Last day trip: ${c.sim.lastTripDay > 0 ? 'day ' + c.sim.lastTripDay : 'none yet'}.
+Bucket list still open: ${open.join('; ') || 'nothing'}. Done: ${done.join('; ') || 'nothing yet'}.
+What ${c.name} has taught it: ${learned.join(', ') || 'nothing yet'}.
+Clones it knows: ${friends.join(', ') || 'none yet'}.
+Recent days:
+${recent.join('\n') || 'It just arrived.'}
+
+ACTIVITIES (id | slots it fits | cost | what | flags):
+${menu}
+
+TASK 1, plans: plan days ${days.join(', ')}. For each day pick one activity id per slot: breakfast, morning, lunch, afternoon, sunset, dinner, night.
+${nextSlot ? `For day ${d}, start from the "${nextSlot}" slot; earlier slots are over.` : `Day ${d} is over; plan it anyway, it is ignored.`}
+Rules: only ids from the list, in a slot the id fits. Use "free" to leave a slot open and "sleep" at night for an early night.
+TRIP ids go in "morning" only and fill the morning, lunch and afternoon (put "free" there). Never on day 1, and at least 3 days between trips.
+BIG ids at most once every 4 days. Do not repeat the same thing two days in a row. Keep enough money for beds, and plan rest when energy is low.
+Chase the open bucket-list wishes over the coming days, stay true to the personality and what ${c.name} taught it, and surprise ${c.name} now and then.
+Each day also gets "intro": one or two sentences to ${c.name} about that day's plan, in the clone's voice, no clock times.
+Optionally one day may get "question": when torn between two BIG ids for the same slot, {"text": "the question to ${c.name}", "options": ["id1", "id2"]}. ${c.name} picks one.
+
+TASK 2, journal: for each event below write "line": one sentence (at most 22 words) in the clone's voice about how it really was. Match the feeling given.
+${lineList || '(none)'}
+
+TASK 3, meetings: for each meeting below write "story": two or three sentences on what the two clones did or talked about. Do not reveal personal details about anyone's real owner (no surnames, jobs, addresses).
+${meetList || '(none)'}
+
+Reply with only JSON in this shape:
+{"plans":[{"day":${d},"intro":"...","slots":{"breakfast":"id","morning":"id","lunch":"id","afternoon":"id","sunset":"id","dinner":"id","night":"id or sleep"},"question":null}],"journal":[{"id":"event id","line":"..."}],"meetings":[{"id":"event id","story":"..."}]}`;
+  }
+
+  function applyCheckIn(c, data, t, lines, meets) {
+    const d = dayOf(t);
+    c.plans ||= {};
+    let planned = 0;
+    for (const p of Array.isArray(data?.plans) ? data.plans : []) {
+      const day = Number(p?.day);
+      if (!(day >= d && day < d + PLAN_DAYS) || !p.slots || typeof p.slots !== 'object') continue;
+      const slots = {};
+      for (const s of PLAN_SLOTS) {
+        const id = String(p.slots[s] ?? '');
+        if (id === 'free' || (id === 'sleep' && s === 'night') || (ACT[id] && !ACT[id].work && ACT[id].slots.includes(s))) slots[s] = id;
+      }
+      let question = null;
+      const q = p.question;
+      if (q && typeof q.text === 'string' && Array.isArray(q.options) && q.options.length === 2) {
+        const [a, b] = q.options.map((x) => ACT[x]);
+        if (a && b && a !== b && a.big && b.big && slotOf(a) === slotOf(b)) question = { text: q.text.slice(0, 200), options: [a.id, b.id] };
+      }
+      c.plans[day] = { intro: typeof p.intro === 'string' ? p.intro.slice(0, 320) : '', slots, question, at: t };
+      planned++;
+    }
+    for (const e of lines) e.lineTried = true;
+    for (const j of Array.isArray(data?.journal) ? data.journal : []) {
+      const e = lines.find((x) => x.id === j?.id);
+      if (e && typeof j.line === 'string' && j.line.trim()) e.line = j.line.trim().slice(0, 220);
+    }
+    for (const e of meets) e.storyTried = true;
+    for (const m of Array.isArray(data?.meetings) ? data.meetings : []) {
+      const e = meets.find((x) => x.id === m?.id);
+      if (e && typeof m.story === 'string' && m.story.trim()) e.story = m.story.trim().slice(0, 600);
+    }
+    for (const k of Object.keys(c.plans)) if (Number(k) < d - 3) delete c.plans[k];
+    c.lastCheckIn = t;
+    markDirty();
+    return planned;
+  }
+
+  async function runCheckIn(c) {
+    if (!sample || checkIn.busy) return;
+    const t = cloneNow(c);
+    simulate(c, t);
+    const lines = linesDue(c, t), meets = meetsDue(c, t);
+    checkIn.busy = true; checkIn.error = '';
+    render(true);
+    try {
+      const data = await sample.json(checkInPrompt(c, t, lines, meets), { modelTier: 'quick' });
+      if (!applyCheckIn(c, data, t, lines, meets)) checkIn.error = 'It could not settle on a plan this time.';
+    } catch (err) {
+      const code = err?.code;
+      if (AI_OFF.includes(code)) sample = null;
+      else checkIn.error = code === 'rate_limited' ? 'Claude is busy for you right now. Try again in a while.'
+        : code === 'invalid_json' ? 'Its plan came out garbled.' : 'The check-in did not come through.';
+    } finally {
+      checkIn.busy = false;
+      render(true);
+      flush();
+    }
+  }
+
+  function planKey(c, t) {
+    const d = dayOf(t);
+    return [d, c.plans?.[d]?.at, c.events.filter((e) => e.t <= t && dayOf(e.t) === d).length, checkIn.busy, checkIn.error, !!sample, sample && needsCheckIn(c)].join('|');
+  }
+
+  function renderPlan(c, t) {
+    const d = dayOf(t);
+    const p = c.plans?.[d];
+    const todays = c.events.filter((e) => dayOf(e.t) === d && e.t <= t && e.slot);
+    const reached = Math.max(-1, ...todays.map((e) => PLAN_SLOTS.indexOf(e.slot)));
+    const covered = new Set(todays.flatMap((e) => ACT[e.act]?.spans?.slice(1) || []));
+    let html = `<div class="row" style="justify-content:space-between"><h3>Today's plan</h3><span class="muted small">Day ${d}</span></div>`;
+    if (p) {
+      if (p.intro) html += `<p class="voice">${esc(p.intro)}</p>`;
+      html += '<ol class="plan">' + PLAN_SLOTS.map((s, i) => {
+        const id = p.slots[s];
+        const did = todays.find((e) => e.slot === s);
+        if (did) {
+          const changed = id && id !== 'free' && did.act !== id;
+          return `<li class="did"><span>${SLOT_NAME[s]}</span><span>✓ ${esc(actLabel(did.act))}${changed ? ' <em class="muted">· changed plans</em>' : ''}</span></li>`;
+        }
+        if (covered.has(s)) return '';
+        if (!id || id === 'free') return i > reached ? `<li><span>${SLOT_NAME[s]}</span><span class="muted">${actLabel('free')}</span></li>` : '';
+        return `<li class="${i < reached ? 'skip' : ''}"><span>${SLOT_NAME[s]}</span><span>${esc(actLabel(id))}</span></li>`;
+      }).join('') + '</ol>';
+    } else {
+      html += `<p class="muted small">No plan for today, so it follows its instincts.</p>`;
+    }
+    if (checkIn.busy) html += `<p class="muted small">${esc(c.name)}'s clone is thinking about the next days…</p>`;
+    else if (!sample) html += `<p class="muted small">AI planning is off on this page, so it follows simple instincts.</p>`;
+    else if (checkIn.error) html += `<p class="small" style="color:var(--bad)">${esc(checkIn.error)}</p><button class="btn ghost small" type="button" data-checkin="1">Try again</button>`;
+    else if (needsCheckIn(c)) html += `<button class="btn small" type="button" data-checkin="1">Check in with ${esc(c.name)}'s clone</button><p class="muted small">It plans the next days and writes up what happened. Uses Claude.</p>`;
+    else if (p) html += `<p class="muted small">Planned by the clone itself (AI). It may change its mind if money or energy run low.</p>`;
+    $('#planCard').innerHTML = html;
   }
 
   // =====================================================================
@@ -958,7 +1174,7 @@
   // =====================================================================
   // Rendering
   // =====================================================================
-  let lastLogKey = '', tab = 'log', openPostcards = new Set();
+  let lastLogKey = '', lastPlanKey = '', tab = 'log', openPostcards = new Set();
 
   function currentEvent(c, t) {
     let cur = null;
@@ -1021,8 +1237,12 @@
       qCard.hidden = true;
     }
 
+    // Today's plan
+    const pk = planKey(c, t);
+    if (force || pk !== lastPlanKey) { lastPlanKey = pk; renderPlan(c, t); }
+
     // Log, bucket, personality
-    const key = c.events.filter((e) => e.t <= t).length + ':' + c.events.map((e) => (e.react || '') + (e.postcard ? 'p' : '')).join('') + ':' + tab + ':' + Object.keys(c.diaries).length;
+    const key = c.events.filter((e) => e.t <= t).length + ':' + c.events.map((e) => (e.react || '') + (e.postcard ? 'p' : '') + (e.line ? 'l' : '') + (e.story ? 's' : '')).join('') + ':' + tab + ':' + Object.keys(c.diaries).length;
     if (force || key !== lastLogKey) { lastLogKey = key; renderLog(c, t); renderBucket(c); renderMe(c); }
   }
 
@@ -1057,7 +1277,9 @@
           </div>`;
         const photo = (e.hl || e.act === 'meet') && !e.sleep ? scenePhoto(e, c.avatar) : '';
         const pc = e.postcard && openPostcards.has(e.id) ? `<div class="postcard">${esc(e.postcard)}</div>` : `<div class="postcard" data-pc="${e.id}" hidden></div>`;
-        html += `<div class="entry ${e.hl ? 'hl' : ''}"><time>${hhmm(e.t)}</time><div><div class="t">${esc(e.title)}</div><div class="meta">${meta.join('')}</div>${why}${tick}${photo}${acts}${pc}</div></div>`;
+        const voice = e.line ? `<div class="voice">“${esc(e.line)}”</div>` : '';
+        const story = e.story ? `<div class="story">${esc(e.story)}</div>` : '';
+        html += `<div class="entry ${e.hl ? 'hl' : ''}"><time>${hhmm(e.t)}</time><div><div class="t">${esc(e.title)}</div>${voice}<div class="meta">${meta.join('')}</div>${why}${tick}${story}${photo}${acts}${pc}</div></div>`;
       }
       html += '</div></div>';
     }
@@ -1150,7 +1372,7 @@
       <div class="av-preview">${avatarSvg(setup.avatar, 'Your clone')}</div>
       <div class="traits">${Object.entries(TRAITS).map(([k, [lo, hi]]) => `<div class="trait"><span>${lo}</span><span class="bar"><i style="left:${(traits[k] * 100).toFixed(0)}%"></i></span><span>${hi}</span></div>`).join('')}</div>
       <p class="muted small">Budget ${euro(setup.budget)} · ${setup.speed}× real time · first stop: Lisbon</p>
-      <p class="muted small">Postcards and diary entries are written by Claude when you tap them. The first time, you'll be asked to allow that.</p>
+      <p class="muted small">Claude acts as your clone's mind: it plans its days, writes its journal and tells you about the clones it meets. You'll be asked once to allow that. Without it, the clone follows simple instincts.</p>
       <button class="btn" type="button" id="flyBtn">Send it to Lisbon</button>
       <button class="btn ghost" type="button" id="backBtn">Change my answers</button></div>`;
     $('#flyBtn').onclick = async () => {
@@ -1183,13 +1405,17 @@
     $('#speedChips').innerHTML = SPEEDS.map(([v, l]) => `<button class="chip" type="button" data-speed="${v}" aria-pressed="${clone.speed === v}">${l}</button>`).join('');
     $('#saveNote').textContent = docRef ? 'Saved to your account: your clone keeps living while this page is closed.'
       : 'Saved in this browser: your clone keeps living while this page is closed.';
+    clone.plans ||= {};
     render(true);
+    // One automatic check-in per page load (on opening, or right after sending it off).
+    if (sample && !checkIn.autoUsed && needsCheckIn(clone)) { checkIn.autoUsed = true; runCheckIn(clone); }
   }
 
   document.addEventListener('click', (ev) => {
     const b = ev.target.closest('button');
     if (!b || !clone) return;
-    if (b.dataset.answer != null) answer(clone, Number(b.dataset.answer));
+    if (b.dataset.checkin) runCheckIn(clone);
+    else if (b.dataset.answer != null) answer(clone, Number(b.dataset.answer));
     else if (b.dataset.react) react(clone, b.dataset.id, b.dataset.react);
     else if (b.dataset.post) {
       const e = clone.events.find((x) => x.id === b.dataset.post);
@@ -1248,7 +1474,7 @@
   boot();
 
   // For testing.
-  window.__elsewhere = { get clone() { return clone; }, simulate, cloneNow, answer: (i) => answer(clone, i) };
+  window.__elsewhere = { get clone() { return clone; }, simulate, cloneNow, answer: (i) => answer(clone, i), checkIn: () => runCheckIn(clone), needsCheckIn: () => needsCheckIn(clone) };
 })();
 </script>
 

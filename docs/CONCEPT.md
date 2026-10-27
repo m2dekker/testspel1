@@ -59,10 +59,24 @@ travels without you and sends postcards. Elsewhere is that idea with AI, and wit
 
 ## Where AI is used
 
-1. **Deciding** (rules plus personality now; an AI planner later for richer choices).
-2. **Writing:** postcards and diary entries in the clone's voice (working in the test).
-3. **Meeting:** what happens when two clones meet (later).
-4. **Images:** realistic photos of key moments with Hitchfield (next step).
+The clone has an **AI mind** and a **rule-based body**:
+
+- **The mind (Claude), one check-in per clone day.** It gets the clone's personality,
+  money, energy, bucket list, what you taught it and its last days, plus the menu of
+  things it can do. In one call it returns:
+  1. **A plan** for today and the next two days, one activity per part of the day, with a
+     short note to you in its own voice, and sometimes the daily question for you.
+  2. **Journal lines:** one sentence in its voice for each recent moment.
+  3. **Meeting stories:** what happened when it met another clone.
+- **The body (rules)** carries the plan out on the clock and keeps the books: money,
+  energy, mood, beds, bucket-list ticks. If the plan no longer works (money ran low, too
+  tired for a day trip), it changes plans on its own. Days without a plan fall back to
+  personality-based instincts.
+- **On tap:** postcards and diary entries.
+- **Later:** realistic photos of key moments with Hitchfield.
+
+Planning three days ahead means the clone keeps following its own plan while the app
+is closed (at 3×, three clone days is about a real day).
 
 **Cost rule:** AI runs at moments that matter, never continuously, so the cost per
 player stays predictable.
@@ -94,6 +108,9 @@ player stays predictable.
   Caparica) are pinned to the map edge
 - Journal per day with spending, reactions, bucket-list ticks and clone meetings
 - One question a day, money trouble with a rescue question
+- AI check-in (Claude) when you open it: plans the next days (shown as "Today's plan"),
+  writes journal lines in its voice and stories of clone meetings; a button when a new
+  check-in is due while the page stays open
 - AI-written postcards and diary entries (on tap)
 
 ## Open questions
