@@ -242,8 +242,8 @@
   .post-body .meta { font-size: 12px; color: var(--muted); }
   .post .postcard { margin: 0 14px 14px; }
   .post .story { margin: 0; }
-  .quote-card { aspect-ratio: 4 / 3; display: flex; flex-direction: column; justify-content: space-between; padding: 22px; color: #fff; }
-  .quote-card p { font-family: var(--font-display); font-size: 27px; line-height: 1.2; }
+  .quote-card { aspect-ratio: 16 / 9; display: flex; flex-direction: column; justify-content: space-between; padding: 16px 20px; color: #fff; }
+  .quote-card p { font-family: var(--font-display); font-size: 25px; line-height: 1.15; }
   .quote-card span { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
   .more { align-self: center; }
   .profile { display: flex; align-items: center; gap: 16px; }
@@ -285,6 +285,32 @@
   .sheet { width: min(560px, 100%); background: var(--surface); border-radius: 20px 20px 0 0; padding: 20px 16px calc(20px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 12px; }
   .toast { position: fixed; z-index: 11; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); border-radius: 999px; padding: 8px 14px; font-size: 14px; max-width: calc(100% - 32px); }
   .toast[hidden] { display: none; }
+
+  /* ---------- round 2: hooks, twists, passport, share ---------- */
+  .away-banner { display: flex; flex-direction: column; gap: 2px; background: var(--ink); color: var(--bg); border-radius: 16px; padding: 12px 14px; }
+  .away-banner span { font-size: 14px; opacity: 0.85; }
+  .bubble { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 18px 18px 18px 4px; padding: 10px 14px; font-family: var(--font-display); font-size: 19px; line-height: 1.3; }
+  .bubble span { display: block; font-family: var(--font-body); font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .today .link { align-self: flex-start; }
+  .new { font-style: normal; font-size: 10px; font-weight: 800; letter-spacing: 0.06em; color: #fff; background: var(--bad); border-radius: 4px; padding: 1px 5px; margin-left: 6px; vertical-align: 2px; }
+  .likes { font-size: 14px; font-weight: 600; }
+  .post.twist { border: 2px solid #e0603a; }
+  .question { border: 2px solid var(--tram); }
+  .question h3 { color: var(--tram-ink); background: var(--tram); align-self: flex-start; padding: 2px 10px; border-radius: 999px; letter-spacing: 0.1em; }
+  .question .q-options { grid-template-columns: 1fr 1fr; }
+  .question .opt { text-align: center; font-weight: 700; }
+  .locked .photo.real img { filter: blur(14px) saturate(1.2); transform: scale(1.1); }
+  .locked .photo.real figcaption { left: 50%; right: auto; bottom: 50%; transform: translate(-50%, 50%); font-size: 13px; padding: 6px 12px; white-space: nowrap; }
+  .stamps { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; padding: 6px 2px; }
+  .stamp { aspect-ratio: 1; border-radius: 50%; border: 3px dashed var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 18px; gap: 6px; color: var(--muted); transform: rotate(var(--r, 0deg)); }
+  .stamp b { font-size: 13px; line-height: 1.25; text-transform: uppercase; letter-spacing: 0.04em; }
+  .stamp span { font-family: var(--font-data); font-size: 11px; }
+  .stamp.done { border: 4px double var(--bad); color: var(--bad); background: color-mix(in srgb, var(--bad) 7%, transparent); }
+  .stamp.done.city { border-color: var(--cobalt); color: var(--cobalt); background: color-mix(in srgb, var(--cobalt) 8%, transparent); }
+  .stamp.done.city b { font-family: var(--font-display); font-size: 30px; font-weight: 400; letter-spacing: 0.08em; }
+  .share-img { width: 100%; max-height: 52vh; object-fit: contain; border-radius: 12px; background: var(--line); }
+  #mapSheet #map { width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--line); background: var(--water); aspect-ratio: 1000 / 760; }
+  #setup .chips .chip { cursor: default; }
   @media (prefers-reduced-motion: no-preference) {
     .pulse { animation: pulse 1.6s ease-out infinite; transform-origin: center; transform-box: fill-box; }
     @keyframes pulse { 0% { opacity: 0.6; transform: scale(0.6); } 100% { opacity: 0; transform: scale(2.2); } }
@@ -310,7 +336,8 @@
 
     <!-- Home: what it is doing now, today's plan, and its moments -->
     <div class="screen" id="scr-home">
-      <button class="now-strip" type="button" data-go="map" aria-label="Where it is now">
+      <div class="away-banner" id="awayBanner" hidden></div>
+      <button class="now-strip" type="button" data-map="1" aria-label="Where it is now, on the map">
         <span class="ring" id="headAvatar"></span>
         <span class="grow"><span class="what" id="nowWhat">…</span><span class="muted small" id="nowWhere"></span><span class="bar"><i id="nowBar"></i></span></span>
         <span class="muted small mono" id="nowUntil"></span>
@@ -324,18 +351,9 @@
       </div>
       <div id="feed"></div>
       <div class="card" id="photoTest" hidden>
-        <div class="row" style="justify-content:space-between"><h3>Preview</h3><span class="muted small">swipe →</span></div>
-        <p class="small muted">How its moments will look. An invented stand-in for now; with your selfies it becomes you.</p>
+        <div class="row" style="justify-content:space-between"><h3>Still to come</h3><span class="muted small">swipe →</span></div>
         <div class="strip" id="photoStrip"></div>
       </div>
-    </div>
-
-    <!-- Map: where it is right now -->
-    <div class="screen" id="scr-map" hidden>
-      <span class="away" id="awayBadge" hidden></span>
-      <svg id="map" viewBox="0 0 1000 760" role="img" aria-label="Map of Lisbon showing where your clone is"></svg>
-      <div id="nowPhoto"></div>
-      <p class="muted small">Live position on a real map of Lisbon. Neighbourhoods and landmarks are real; cafés, restaurants and bars are invented. Map data © OpenStreetMap contributors.</p>
     </div>
 
     <!-- Shop: a test of what people would buy. Nothing is charged. -->
@@ -361,21 +379,12 @@
         </div>
       </div>
       <p class="small" id="profileBio"></p>
-      <div class="stats">
-        <div class="stat"><small>Money</small><b id="money2">€0</b></div>
-        <div class="stat"><small>Energy</small><b id="energyText">80</b><div class="meter"><i id="energyBar"></i></div></div>
-        <div class="stat"><small>Mood</small><b id="moodText">Good</b><div class="meter"><i id="moodBar"></i></div></div>
-      </div>
       <div class="seg" role="tablist">
         <button role="tab" type="button" data-sub="grid" aria-selected="true">Moments</button>
-        <button role="tab" type="button" data-sub="log" aria-selected="false">Diary</button>
-        <button role="tab" type="button" data-sub="bucket" aria-selected="false">Bucket list</button>
-        <button role="tab" type="button" data-sub="me" aria-selected="false">Personality</button>
+        <button role="tab" type="button" data-sub="bucket" aria-selected="false">Passport</button>
       </div>
       <div id="tab-grid" class="grid"></div>
-      <div id="tab-log" hidden></div>
-      <div id="tab-bucket" class="card bucket" hidden></div>
-      <div id="tab-me" class="card" hidden></div>
+      <div id="tab-bucket" hidden></div>
       <footer>
         <div class="row" style="flex-wrap:wrap; gap:8px"><span>Test speed:</span><div class="chips" id="speedChips"></div></div>
         <p><span id="speedLabel"></span>. <span id="saveNote"></span></p>
@@ -383,7 +392,13 @@
       </footer>
     </div>
 
-    <nav class="bottomnav" aria-label="Sections"><button type="button" data-go="home" aria-label="Home" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z"/></svg><span>Home</span></button><button type="button" data-go="map" aria-label="Map" aria-current="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Map</span></button><button type="button" data-go="shop" aria-label="Shop" aria-current="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span>Shop</span></button><button type="button" data-go="chat" aria-label="Messages" aria-current="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Messages</span><i class="badge" id="chatBadge" hidden></i></button><button type="button" data-go="me" aria-label="Profile" aria-current="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>Profile</span></button></nav>
+    <nav class="bottomnav" aria-label="Sections"><button type="button" data-go="home" aria-label="Home" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z"/></svg><span>Home</span></button><button type="button" data-go="shop" aria-label="Shop" aria-current="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span>Shop</span></button><button type="button" data-go="chat" aria-label="Messages" aria-current="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Messages</span><i class="badge" id="chatBadge" hidden></i></button><button type="button" data-go="me" aria-label="Profile" aria-current="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>Profile</span></button></nav>
+    <div class="sheet-back" id="mapSheet" hidden><div class="sheet" role="dialog" aria-modal="true" aria-label="Where it is now">
+      <div class="row" style="justify-content:space-between"><h2>Live in Lisbon</h2><button class="btn ghost small" type="button" data-closemap="1">Close</button></div>
+      <span class="away" id="awayBadge" hidden></span>
+      <svg id="map" viewBox="0 0 1000 760" role="img" aria-label="Map of Lisbon showing where your clone is"></svg>
+      <p class="muted small">Real map of Lisbon; cafés and bars are invented. Map data © OpenStreetMap contributors.</p>
+    </div></div>
     <div class="sheet-back" id="sheet" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><div id="sheetBody"></div></div></div>
     <div class="toast" id="toast" hidden></div>
   </section>
@@ -557,35 +572,28 @@
     spontaneous: ['Planner', 'Spontaneous'],
   };
   const QUESTIONS = [
-    { q: 'A free Saturday. You…', a: [
-      ['Pack a bag and go somewhere new', { adventure: 0.25, spontaneous: 0.15 }],
-      ['Sleep in, coffee, a good book', { adventure: -0.25, social: -0.1 }],
-      ['Call friends and see what happens', { social: 0.25, spontaneous: 0.1 }]] },
-    { q: 'Dinner tonight?', a: [
-      ['Street food from a stall', { foodie: 0.1, spender: -0.2 }],
-      ['A long tasting menu', { foodie: 0.3, spender: 0.25 }],
-      ['Whatever is quickest', { foodie: -0.25 }]] },
-    { q: 'Midnight usually finds you…', a: [
-      ['On a dance floor', { nightOwl: 0.3, social: 0.15 }],
-      ['Fast asleep', { nightOwl: -0.3 }],
-      ['Deep in a long conversation', { nightOwl: 0.15, social: 0.1 }]] },
-    { q: 'You travel best with…', a: [
-      ['New people I meet on the way', { social: 0.3 }],
-      ['Just me', { social: -0.3 }]] },
+    { q: 'Your flight lands at 7am. You…', a: [
+      ['Drop the bags, go explore', { adventure: 0.25, spontaneous: 0.15 }],
+      ['Nap. Obviously.', { adventure: -0.25, nightOwl: 0.1 }],
+      ['Find the nearest party', { social: 0.25, nightOwl: 0.2 }]] },
+    { q: 'Dinner budget?', a: [
+      ['Street food king', { foodie: 0.1, spender: -0.25 }],
+      ['Twelve courses, no regrets', { foodie: 0.3, spender: 0.25 }],
+      ['Whatever is closest', { foodie: -0.25 }]] },
+    { q: 'It is 2am. Where are you?', a: [
+      ['Dancing on a table', { nightOwl: 0.3, social: 0.2 }],
+      ['Asleep since ten', { nightOwl: -0.3 }],
+      ['Deep talk with a stranger', { nightOwl: 0.15, social: 0.1 }]] },
     { q: 'Museum or mountain?', a: [
-      ['Museum, obviously', { culture: 0.3, nature: -0.15 }],
-      ['Mountain, obviously', { nature: 0.3, culture: -0.1 }],
-      ['A bit of both', { culture: 0.1, nature: 0.1 }]] },
-    { q: 'Plans for a trip?', a: [
-      ['Every hour planned', { spontaneous: -0.3 }],
-      ['Wing it', { spontaneous: 0.3 }]] },
-    { q: 'Money on holiday:', a: [
-      ['Treat yourself, you only live once', { spender: 0.3 }],
-      ['Every euro counts', { spender: -0.3 }]] },
-    { q: 'The boldest thing you would try?', a: [
-      ['Surfing big waves', { adventure: 0.3, nature: 0.1 }],
-      ['Karaoke in front of strangers', { social: 0.2, adventure: 0.1 }],
-      ['Neither, thanks', { adventure: -0.2 }]] },
+      ['Museum. Obviously.', { culture: 0.3, nature: -0.15 }],
+      ['Mountain. Obviously.', { nature: 0.3, culture: -0.1 }],
+      ['Whichever has snacks', { foodie: 0.15, culture: 0.05, nature: 0.05 }]] },
+    { q: 'A stranger invites you to their grandma\'s birthday.', a: [
+      ['I\'m in', { social: 0.3, spontaneous: 0.25 }],
+      ['Politely flee', { social: -0.25, spontaneous: -0.2 }]] },
+    { q: 'Money on holiday is…', a: [
+      ['Fake. Spend it.', { spender: 0.3 }],
+      ['Sacred. Count it.', { spender: -0.3 }]] },
   ];
   const BUDGETS = [['Tight', 600], ['Comfortable', 1500], ['Lavish', 5000]];
   const SPEEDS = [[3, '3× real feel'], [30, '30× fast'], [300, '300× preview']];
@@ -765,6 +773,7 @@
     };
     addEvent(c, e);
     maybeTextFirst(c, e);
+    if (!a.work && !a.restful && !a.spans) maybeTwist(c, t + dur * 0.6, place);
     // Sometimes it meets another clone.
     if (!a.work && !a.restful && Math.random() < 0.03 + c.traits.social * 0.08 && ['culture', 'nightlife', 'food', 'sight', 'adventure'].includes(a.cat)) {
       meetClone(c, t + dur * 0.4, place);
@@ -810,7 +819,7 @@
     // Out of money: ask for help (once every few days).
     if (c.money < 50 && day > c.helpAskedDay + 2) {
       c.helpAskedDay = day;
-      c.question = { kind: 'help', day, text: `I'm down to ${euro(c.money)}. Send me €200, or should I find work for a few days?`,
+      c.question = { kind: 'help', day, text: `I'm down to ${euro(c.money)}. send €200 or I start pouring coffee for tourists. your call 🥲`,
         options: ['send', 'work'], labels: ['Send €200', 'Find work'], answer: null, deadline: t + 6 * H };
       return;
     }
@@ -838,7 +847,7 @@
     if (slotOf(a) !== slotOf(b)) { c.question = null; return; }
     const slot = slotOf(a);
     const deadlineHour = { morning: 9.5, afternoon: 14, dinner: 20, night: 22 }[slot];
-    c.question = { kind: 'choice', day, slot, text: `Today: should I ${a.short}, or ${b.short}?`,
+    c.question = { kind: 'choice', day, slot, text: pick([`${cap(a.short)} or ${b.short}? choose wisely.`, `big decision: ${a.short}, or ${b.short}?`, `you decide today: ${a.short} or ${b.short}. I'm not responsible for what happens`]),
       options: [a.id, b.id], labels: [cap(a.short), cap(b.short)], answer: null, deadline: (day - 1) * DAY + deadlineHour * H };
     markDirty();
   }
@@ -852,8 +861,8 @@
       const t = c.sim.cursor;
       const s = c.sim.slot;
       if (s === 'arrive') {
-        addEvent(c, { id: 'arrive', t, end: t + 1.2 * H, act: 'arrive', cat: 'travel', title: 'Landed in Lisbon. Warm wind, blue sky, a taxi into town',
-          area: 'airport', lat: AREAS.airport.lat, lng: AREAS.airport.lng, cost: 22, earn: 0, mood: 0.8, reason: 'self', hl: true });
+        addEvent(c, { id: 'arrive', t, end: t + 1.2 * H, act: 'arrive', cat: 'travel', title: 'Landed in Lisbon. First stop: coffee and a pastel de nata',
+          area: 'baixa', lat: AREAS.baixa.lat, lng: AREAS.baixa.lng, cost: 22, earn: 0, mood: 0.8, reason: 'self', hl: true });
         c.money -= 22;
         c.sim.cursor = t + 1.2 * H; c.sim.slot = 'morning'; c.sim.day = 1;
         continue;
@@ -945,45 +954,10 @@
     const words = Object.entries(c.traits).map(([k, v]) => v > 0.62 ? TRAITS[k][1].toLowerCase() : v < 0.38 ? TRAITS[k][0].toLowerCase() : null).filter(Boolean);
     return `You write as the clone of a real person named ${c.name}: an AI copy of them, living its own life in Lisbon in a simulated world. ` +
       `Personality: ${words.join(', ') || 'balanced'}. Current mood: ${moodWord(c.mood).toLowerCase()}. Energy ${Math.round(c.energy)}/100. Money left: ${euro(c.money)}. ` +
-      `Write to ${c.name} in the first person, warm and playful, with concrete sensory details and a little "you should have been here" envy. ` +
+      `Voice: funny, dry, self-aware and a little chaotic, like a friend's best Instagram captions. Short sentences, lowercase is fine, light bragging, self-deprecating jokes. Never cheesy, never inspirational. Talk to ${c.name} in the first person. ` +
       `Stick to the facts given. Café, restaurant and bar names are fictional: use only the ones given and never invent other businesses or brands. ` +
       `Real neighbourhoods and public landmarks may be described in general terms. No hashtags, no emoji, plain text.`;
   }
-  async function writePostcard(c, e, el) {
-    if (!sample) return;
-    el.className = 'postcard wait'; el.textContent = 'Writing your postcard…';
-    const prompt = `${persona(c)}\n\nWrite a postcard of 60 to 100 words about this moment.\n` +
-      `Day ${dayOf(e.t)}, ${hhmm(e.t)}, ${AREAS[e.area].name}: ${e.title}.` +
-      `${e.cost ? ` It cost ${euro(e.cost)}.` : ''}${e.earn ? ` It earned ${euro(e.earn)}.` : ''}` +
-      `${e.ticked ? ` This ticked off a bucket-list wish: "${e.ticked}".` : ''}` +
-      `${e.reason === 'you' ? ` ${c.name} chose this for the clone.` : ''} How it felt: ${moodWord(e.mood).toLowerCase()}.`;
-    try {
-      const { text } = await sample(prompt, { modelTier: 'quick', onText: ({ text }) => { el.className = 'postcard'; el.textContent = text; } });
-      e.postcard = text; el.className = 'postcard'; el.textContent = text; markDirty();
-    } catch (err) {
-      el.className = 'postcard wait';
-      el.textContent = err.code === 'not_granted' || err.code === 'sampling_disabled' ? 'Postcards need permission to use Claude on this page.'
-        : err.code === 'rate_limited' ? 'Too many postcards at once. Try again in a bit.' : 'The postcard got lost in the post. Try again.';
-      if (err.code === 'not_granted' || err.code === 'sampling_disabled') sample = null;
-    }
-  }
-  async function writeDiary(c, day, el, btn) {
-    if (!sample) return;
-    const evs = c.events.filter((e) => dayOf(e.t) === day && e.t <= cloneNow(c) && !e.sleep);
-    if (!evs.length) return;
-    btn.disabled = true;
-    el.hidden = false; el.className = 'postcard wait'; el.textContent = 'Writing today’s diary…';
-    const lines = evs.map((e) => `${hhmm(e.t)} ${AREAS[e.area].name}: ${e.title}${e.cost ? ` (${euro(e.cost)})` : ''}${e.earn ? ` (earned ${euro(e.earn)})` : ''}${e.react === 'love' ? ' [they loved hearing about this]' : ''}`).join('\n');
-    const prompt = `${persona(c)}\n\nWrite a diary entry of 120 to 170 words about day ${day} in Lisbon, ending with what the clone is looking forward to.\nWhat happened:\n${lines}`;
-    try {
-      const { text } = await sample(prompt, { modelTier: 'quick', cache: false, onText: ({ text }) => { el.className = 'postcard'; el.textContent = text; } });
-      c.diaries[day] = text; el.textContent = text; markDirty();
-    } catch (err) {
-      el.className = 'postcard wait';
-      el.textContent = err.code === 'not_granted' || err.code === 'sampling_disabled' ? 'The diary needs permission to use Claude on this page.' : 'The diary did not come through. Try again.';
-    } finally { btn.disabled = false; }
-  }
-
   // =====================================================================
   // AI check-in: the clone's mind. About once per clone day Claude plans
   // its next days, writes its journal lines and tells what happened when it
@@ -997,7 +971,7 @@
     bifana: 'A bifana and a beer', pratododia: 'Prato do dia at a tasca', sardines: 'Grilled sardines', tasting: 'Tasting menu',
     fado: 'Live fado', rooftop: 'Rooftop cocktails', bairro: 'Street party in Bairro Alto', pinkstreet: 'Drinks on the pink street',
     surf: 'Surf lesson at Caparica', sintra: 'Day trip to Sintra', cascais: 'Day trip to Cascais', wander: 'Get lost in the alleys',
-    market: 'Morning market', work: 'Café shift', meet: 'Met another clone', arrive: 'Landed in Lisbon',
+    market: 'Morning market', work: 'Café shift', twist: 'Plot twist', meet: 'Met another clone', arrive: 'Landed in Lisbon',
   };
   const actLabel = (id) => id === 'sleep' ? 'Early night' : id === 'free' ? 'See how it feels' : ACT_LABEL[id] || id;
   const PLAN_SLOTS = SLOT_ORDER.slice(0, 7);
@@ -1063,17 +1037,18 @@ Rules: only ids from the list, in a slot the id fits. Use "free" to leave a slot
 TRIP ids go in "morning" only and fill the morning, lunch and afternoon (put "free" there). Never on day 1, and at least 3 days between trips.
 BIG ids at most once every 4 days. Do not repeat the same thing two days in a row. Keep enough money for beds, and plan rest when energy is low.
 Chase the open bucket-list wishes over the coming days, stay true to the personality and what ${c.name} taught it, and surprise ${c.name} now and then.
-Each day also gets "intro": one or two sentences to ${c.name} about that day's plan, in the clone's voice, no clock times.
+Each day also gets "intro": one funny sentence to ${c.name} about that day's plan, in the clone's voice, no clock times.
+Each day also gets "twist": one small funny mishap or surprise that happens to the clone that day, first person, one or two sentences, harmless, no real businesses or real people (example: "A seagull stole my pastel de nata mid-bite. I have never felt so seen.").
 Optionally one day may get "question": when torn between two BIG ids for the same slot, {"text": "the question to ${c.name}", "options": ["id1", "id2"]}. ${c.name} picks one.
 
-TASK 2, journal: for each event below write "line": one sentence (at most 22 words) in the clone's voice about how it really was. Match the feeling given.
+TASK 2, journal: for each event below write "line": a funny Instagram caption in the clone's voice, at most 15 words, about how it really was. Match the feeling given.
 ${lineList || '(none)'}
 
-TASK 3, meetings: for each meeting below write "story": two or three sentences on what the two clones did or talked about. Do not reveal personal details about anyone's real owner (no surnames, jobs, addresses).
+TASK 3, meetings: for each meeting below write "story": two or three funny sentences on what the two clones did or talked about. Do not reveal personal details about anyone's real owner (no surnames, jobs, addresses).
 ${meetList || '(none)'}
 
 Reply with only JSON in this shape:
-{"plans":[{"day":${d},"intro":"...","slots":{"breakfast":"id","morning":"id","lunch":"id","afternoon":"id","sunset":"id","dinner":"id","night":"id or sleep"},"question":null}],"journal":[{"id":"event id","line":"..."}],"meetings":[{"id":"event id","story":"..."}]}`;
+{"plans":[{"day":${d},"intro":"...","twist":"...","slots":{"breakfast":"id","morning":"id","lunch":"id","afternoon":"id","sunset":"id","dinner":"id","night":"id or sleep"},"question":null}],"journal":[{"id":"event id","line":"..."}],"meetings":[{"id":"event id","story":"..."}]}`;
   }
 
   function applyCheckIn(c, data, t, lines, meets) {
@@ -1094,7 +1069,7 @@ Reply with only JSON in this shape:
         const [a, b] = q.options.map((x) => ACT[x]);
         if (a && b && a !== b && a.big && b.big && slotOf(a) === slotOf(b)) question = { text: q.text.slice(0, 200), options: [a.id, b.id] };
       }
-      c.plans[day] = { intro: typeof p.intro === 'string' ? p.intro.slice(0, 320) : '', slots, question, at: t };
+      c.plans[day] = { intro: typeof p.intro === 'string' ? p.intro.slice(0, 320) : '', twist: typeof p.twist === 'string' ? p.twist.slice(0, 220) : '', slots, question, at: t };
       planned++;
     }
     for (const e of lines) e.lineTried = true;
@@ -1143,27 +1118,17 @@ Reply with only JSON in this shape:
   function renderPlan(c, t) {
     const d = dayOf(t);
     const p = c.plans?.[d];
-    const todays = c.events.filter((e) => dayOf(e.t) === d && e.t <= t && e.slot);
-    const reached = Math.max(-1, ...todays.map((e) => PLAN_SLOTS.indexOf(e.slot)));
     const curSlot = currentEvent(c, t)?.slot;
-    const covered = new Set(todays.flatMap((e) => ACT[e.act]?.spans?.slice(1) || []));
+    const nextSlot = PLAN_SLOTS.find((s) => PLAN_SLOTS.indexOf(s) > PLAN_SLOTS.indexOf(curSlot || 'breakfast') && p?.slots?.[s] && p.slots[s] !== 'free');
     let html = '';
-    if (p?.intro) html += `<p class="voice">${esc(p.intro)}</p>`;
-    const chips = PLAN_SLOTS.map((s, i) => {
-      if (covered.has(s)) return '';
-      const did = todays.find((e) => e.slot === s);
-      const id = p?.slots?.[s];
-      if (did) return `<span class="slot did ${s === curSlot ? 'now' : ''}"><b>${SLOT_NAME[s]}</b>✓ ${esc(actLabel(did.act))}</span>`;
-      if (!id || id === 'free') return i > reached && p ? `<span class="slot"><b>${SLOT_NAME[s]}</b>${actLabel('free')}</span>` : '';
-      return `<span class="slot ${i < reached ? 'skip' : ''}"><b>${SLOT_NAME[s]}</b>${esc(actLabel(id))}${p.asked === s ? ' · you asked' : ''}</span>`;
-    }).join('');
-    if (chips) html += `<div class="slots" aria-label="Today's plan">${chips}</div>`;
-    if (checkIn.busy) html += `<p class="muted small">${esc(c.name)}'s clone is thinking about the next days…</p>`;
+    if (p?.intro) html += `<p class="bubble">${esc(p.intro)}${nextSlot ? `<span>Up next: ${esc(actLabel(p.slots[nextSlot]).toLowerCase())}${p.asked === nextSlot ? ' (your idea)' : ''}</span>` : ''}</p>`;
+    if (checkIn.busy) html += `<p class="muted small">${esc(c.name)}'s clone is plotting its next days…</p>`;
     else if (sample && checkIn.error) html += `<p class="small" style="color:var(--bad)">${esc(checkIn.error)} <button class="link" type="button" data-checkin="1">Try again</button></p>`;
-    else if (sample && needsCheckIn(c)) html += `<button class="btn small" type="button" data-checkin="1">Check in with ${esc(c.name)}'s clone</button>`;
+    else if (sample && needsCheckIn(c)) html += `<button class="link" type="button" data-checkin="1">Catch up with ${esc(c.name)}'s clone</button>`;
     $('#planCard').innerHTML = html;
     $('#planCard').hidden = !html;
   }
+
 
 
   // =====================================================================
@@ -1173,7 +1138,7 @@ Reply with only JSON in this shape:
   // and arrives when the clone would actually look at its phone.
   // =====================================================================
   const BUSY = new Set(['fado', 'tasting', 'surf', 'sintra', 'cascais', 'castle', 'belem', 'tileclass', 'bairro', 'pinkstreet', 'work', 'tram', 'nap', 'tiles']);
-  const FIRST_TEXTS = ['look where I ended up', 'ok you need to see this', 'wish you were here. actually no, I like having this to myself', 'not jealous yet?', 'this. right now.'];
+  const FIRST_TEXTS = ['look where I ended up', 'ok you need to see this', 'not to brag but', 'proof I am thriving', 'this. right now.'];
   const realAt = (c, t) => c.clock.realEpoch + (t - c.clock.cloneEpoch) / c.speed;
   const chatSending = { busy: false };
 
@@ -1190,7 +1155,7 @@ Reply with only JSON in this shape:
     if (ACT[e.act]?.work || e.sleep || !e.hl) return;
     c.chat ||= [];
     const day = dayOf(e.t);
-    if (c.chat.filter((m) => m.from === 'clone' && m.ev && dayOf(m.t) === day).length >= 2 || Math.random() > 0.65) return;
+    if (c.chat.filter((m) => m.from === 'clone' && m.ev && dayOf(m.t) === day).length >= 2 || (!photoFor(c, e) && Math.random() > 0.5)) return;
     const t = e.t + (e.end - e.t) * rnd(0.3, 0.7);
     c.chat.push({ id: Math.random().toString(36).slice(2, 9), from: 'clone', t, at: realAt(c, t), ev: e.id, text: pick(FIRST_TEXTS) });
   }
@@ -1211,7 +1176,7 @@ Reply with only JSON in this shape:
     return `${persona(c)}
 
 You are texting with ${c.name}, the real person you are a copy of. They know you are their clone living in Lisbon.
-Text like a close friend on WhatsApp: 1 to 3 short messages, each at most 25 words. Casual, lowercase is fine, an emoji only now and then, no hashtags.
+Text like a close, funny friend on WhatsApp: 1 to 3 short messages, each at most 20 words. Casual, lowercase, dry humour, a bit of drama, an emoji now and then, no hashtags.
 Mirror how ${c.name} writes. Have opinions; you may disagree or say no. Never sound like an assistant, never offer help, never say you are an AI model.
 If asked something you could not know, say so like a person would. Do not reveal private details about anyone.
 
@@ -1308,7 +1273,7 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
       if (d !== lastDay) { html += `<div class="chat-day">Day ${d}</div>`; lastDay = d; }
       if (m.from === 'sys') { html += `<div class="chat-sys">${esc(m.text)}</div>`; continue; }
       const e = m.ev && c.events.find((x) => x.id === m.ev);
-      const body = e ? `${PHOTOS[e.act] ? realPhoto(e.act, e.title) : ''}<div>${esc(e.line || m.text)}</div>` : esc(m.text);
+      const body = e ? (photoFor(c, e) ? `${realPhoto(e.act, e.title)}<div>${esc(e.line || m.text)}</div>` : esc(captionOf(e))) : esc(m.text);
       html += `<div class="msg ${m.from === 'you' ? 'me' : 'them'}">${body}<time>${hhmm(m.t)}</time></div>`;
     }
     if (typing === 'typing' || typing === 'sending') html += `<div class="msg them typing" aria-label="typing"><i></i><i></i><i></i></div>`;
@@ -1338,12 +1303,8 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
     miradouro: 'Sunset: white wine on a miradouro, the red bridge far away',
     fado: 'Night: fado in a candle-lit tavern in Alfama',
   };
-  const realPhoto = (id, alt) => `<figure class="photo real"><img src="${PHOTOS[id]}" alt="${esc(alt || PHOTO_LINES[id] || '')}" loading="lazy"><figcaption>AI clone · test stand-in</figcaption></figure>`;
-  function renderPhotoTest(c, t) {
-    const ids = Object.keys(PHOTOS);
-    $('#photoTest').hidden = !ids.length || c.events.some((e) => e.t <= t && PHOTOS[e.act]);
-    $('#photoStrip').innerHTML = ids.map((id) => `<div class="shot">${realPhoto(id)}<p class="small">${esc(PHOTO_LINES[id] || '')}</p></div>`).join('');
-  }
+  const realPhoto = (id, alt) => `<figure class="photo real"><img src="${PHOTOS[photoKey({ act: id })]}" alt="${esc(alt || PHOTO_LINES[id] || '')}" loading="lazy"><figcaption>AI clone · test stand-in</figcaption></figure>`;
+
 
   // =====================================================================
   // Feed: its moments, Instagram-simple. Only highlights become posts;
@@ -1352,7 +1313,7 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
   const CAT_BG = {
     food: ['#c4613c', '#7a2f17'], culture: ['#1f4fa3', '#14213d'], nightlife: ['#4b2c7a', '#16133a'], nature: ['#2e7d5b', '#123d2c'],
     adventure: ['#0f6a8b', '#0b2f45'], social: ['#a03a5a', '#4a1a2b'], sight: ['#b5832a', '#5a3b0e'], travel: ['#1f4fa3', '#0d1b3a'],
-    rest: ['#5c6b82', '#26324a'], shopping: ['#8a4f9e', '#3d1e47'], work: ['#5c6b82', '#26324a'], note: ['#5c6b82', '#26324a'],
+    rest: ['#5c6b82', '#26324a'], twist: ['#e0603a', '#7a1838'], shopping: ['#8a4f9e', '#3d1e47'], work: ['#5c6b82', '#26324a'], note: ['#5c6b82', '#26324a'],
   };
   const catBg = (cat) => { const [a, b] = CAT_BG[cat] || CAT_BG.travel; return `linear-gradient(160deg, ${a}, ${b})`; };
   const ICON = {
@@ -1363,10 +1324,10 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
   };
   let feedDays = 2;
 
-  const isPost = (e) => !e.sleep && e.cat !== 'note' && (e.hl || PHOTOS[e.act] || e.act === 'meet' || e.ticked || e.act === 'arrive');
+  const isPost = (e) => !e.sleep && e.cat !== 'note' && (e.hl || PHOTOS[e.act] || e.act === 'meet' || e.ticked || e.act === 'arrive' || e.act === 'twist');
   function postMedia(c, e) {
-    if (PHOTOS[e.act]) return realPhoto(e.act, e.title);
-    return `<div class="quote-card" style="background:${catBg(e.cat)}"><span>${esc(AREAS[e.area].name)} · day ${dayOf(e.t)}</span><p>${esc(e.line || e.title)}</p><span>${esc(actLabel(e.act))}</span></div>`;
+    if (photoFor(c, e)) return realPhoto(e.act, e.title);
+    return `<div class="quote-card" style="background:${catBg(e.cat)}"><span>${e.act === 'twist' ? 'Plot twist' : esc(actLabel(e.act))}</span><p>${esc(e.act === 'twist' ? e.title : captionOf(e))}</p><span>${esc(AREAS[e.area].name)} · day ${dayOf(e.t)}</span></div>`;
   }
   function renderFeed(c, t) {
     const posts = c.events.filter((e) => e.t <= t && isPost(e) && dayOf(e.t) > dayOf(t) - feedDays).reverse();
@@ -1374,25 +1335,25 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
     const who = `${esc(c.name.toLowerCase())}.clone`;
     const mini = avatarSvg(c.avatar, '');
     $('#feed').innerHTML = posts.map((e) => {
-      const caption = PHOTOS[e.act] || !e.line ? (e.line || e.title) : e.title;
-      const facts = [e.cost ? `−${euro(e.cost)}` : '', e.earn ? `+${euro(e.earn)}` : '', e.reason === 'you' ? 'you picked this' : e.reason === 'plan' ? 'its own plan' : ''].filter(Boolean).join(' · ');
-      return `<article class="post" id="post-${e.id}">
-        <div class="post-head"><span class="ring">${mini}</span><div class="grow"><b>${who}</b><span class="muted">${esc(AREAS[e.area].name)} · day ${dayOf(e.t)}, ${hhmm(e.t)}</span></div></div>
+      const venue = (e.title.match(/ at ([A-Z][^,.]+?)(?: on | in |,|$)/) || [])[1];
+      const so = socialOf(c, e);
+      const fresh = seenFrom >= 0 && e.t > seenFrom;
+      const facts = [e.cost ? `−${euro(e.cost)}` : '', e.earn ? `+${euro(e.earn)}` : '', e.reason === 'you' ? 'you picked this' : ''].filter(Boolean).join(' · ');
+      return `<article class="post ${e.act === 'twist' ? 'twist' : ''}" id="post-${e.id}">
+        <div class="post-head"><span class="ring">${mini}</span><div class="grow"><b>${who}${fresh ? ' <i class="new">NEW</i>' : ''}</b><span class="muted">${esc(venue ? venue + ' · ' : '')}${esc(AREAS[e.area].name)} · ${hhmm(e.t)}</span></div></div>
         ${postMedia(c, e)}
         <div class="post-actions">
           <button class="icon-btn" type="button" data-react="love" data-id="${e.id}" aria-pressed="${e.react === 'love'}" aria-label="Love this">${ICON.heart}</button>
           <button class="icon-btn" type="button" data-reply="${e.id}" aria-label="Reply in messages">${ICON.reply}</button>
           <button class="icon-btn" type="button" data-share="${e.id}" aria-label="Share">${ICON.share}</button>
-          <span class="grow"></span>
-          ${sample ? `<button class="icon-btn" type="button" data-post="${e.id}" aria-label="Postcard">${ICON.card}</button>` : ''}
         </div>
         <div class="post-body">
-          <p class="cap"><b>${who}</b>${esc(caption)}</p>
+          <p class="likes">Liked by <b>${esc(so.name)}.clone</b> and ${so.likes + (e.react === 'love' ? 1 : 0)} others</p>
+          <p class="cap"><b>${who}</b>${esc(e.act === 'twist' ? pickBy(['well. that happened.', 'no further questions.', 'anyway. how is your day', 'I am fine. probably.'], e.id) : photoFor(c, e) ? captionOf(e) : e.act === 'meet' ? (e.story || 'new friend unlocked') : e.title)}</p>
           ${e.ticked ? `<p class="small" style="color:var(--good);font-weight:700">✓ Bucket list: ${esc(e.ticked)}</p>` : ''}
-          ${e.story ? `<div class="story">${esc(e.story)}</div>` : ''}
+          ${so.comment ? `<p class="cap"><b>${esc(so.comment.who)}.clone</b>${esc(so.comment.text)}</p>` : ''}
           ${facts ? `<p class="meta">${esc(facts)}</p>` : ''}
         </div>
-        ${e.postcard && openPostcards.has(e.id) ? `<div class="postcard">${esc(e.postcard)}</div>` : `<div class="postcard" data-pc="${e.id}" hidden></div>`}
       </article>`;
     }).join('') + (older ? `<button class="btn ghost small more" type="button" data-more="1">Show earlier days</button>` : '') +
       (posts.length ? '' : `<p class="muted small" style="text-align:center">Its best moments show up here. The first one is on its way.</p>`);
@@ -1400,16 +1361,16 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
 
   function renderGrid(c, t) {
     const posts = c.events.filter((e) => e.t <= t && isPost(e)).reverse();
-    $('#tab-grid').innerHTML = posts.map((e) => `<button type="button" data-open="${e.id}" aria-label="${esc(e.title)}">${PHOTOS[e.act] ? `<img src="${PHOTOS[e.act]}" alt="">` : `<span class="mini" style="background:${catBg(e.cat)}">${esc(actLabel(e.act))}</span>`}</button>`).join('')
+    $('#tab-grid').innerHTML = posts.map((e) => `<button type="button" data-open="${e.id}" aria-label="${esc(e.title)}">${photoFor(c, e) ? `<img src="${photoFor(c, e)}" alt="">` : `<span class="mini" style="background:${catBg(e.cat)}">${esc(actLabel(e.act))}</span>`}</button>`).join('')
       || '<p class="muted small" style="grid-column:1/-1">No moments yet.</p>';
   }
 
   function renderProfile(c, t) {
-    const words = Object.entries(c.traits).map(([k, v]) => v > 0.62 ? TRAITS[k][1] : v < 0.38 ? TRAITS[k][0] : null).filter(Boolean);
+    const words = Object.entries(c.traits).map(([k, v]) => [Math.abs(v - 0.5), v > 0.5 ? TRAITS[k][1] : TRAITS[k][0]]).sort((a, b) => b[0] - a[0]).slice(0, 3).map((x) => x[1]);
     const posts = c.events.filter((e) => e.t <= t && isPost(e)).length;
     $('#profileLine').textContent = `${c.name.toLowerCase()}.clone · Lisbon, day ${dayOf(t)}`;
-    $('#profileCounts').innerHTML = `<span><b>${posts}</b>moments</span><span><b>${Object.keys(c.friends).length}</b>clones met</span><span><b>${c.bucket.filter((b) => b.done).length}/${c.bucket.length}</b>bucket list</span>`;
-    $('#profileBio').textContent = `${words.join(' · ') || 'Balanced'}. AI clone of ${c.name}, living its own life.`;
+    $('#profileCounts').innerHTML = `<span><b>${posts}</b>moments</span><span><b>${Object.keys(c.friends).length}</b>clones met</span><span><b>🔥 ${c.streak?.n || 1}</b>day streak</span>`;
+    $('#profileBio').textContent = `${words.join(' · ') || 'Balanced'}. AI clone of ${c.name}. ${euro(c.money)} left${c.money < 60 ? ' (help)' : ''}.`;
   }
 
   // =====================================================================
@@ -1466,21 +1427,197 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
       <button class="btn" type="button" data-close="1">Got it</button>`);
   }
 
-  async function shareMoment(c, e) {
-    const text = `My AI clone in Lisbon: "${e.line || e.title}" (Elsewhere, AI-generated)`;
-    try {
-      if (navigator.share) {
-        const data = { title: 'Elsewhere', text };
-        if (PHOTOS[e.act] && navigator.canShare) {
-          const blob = await (await fetch(PHOTOS[e.act])).blob();
-          const file = new File([blob], `elsewhere-${e.act}.jpg`, { type: 'image/jpeg' });
-          if (navigator.canShare({ files: [file] })) data.files = [file];
-        }
-        await navigator.share(data);
-        return;
-      }
-    } catch (err) { if (err?.name === 'AbortError') return; }
-    try { await navigator.clipboard.writeText(text); toast('Caption copied. Paste it anywhere.'); } catch (err) { toast('Sharing is not available here.'); }
+
+
+  // =====================================================================
+  // Comedy: captions, plot twists and other clones' reactions.
+  // Used when Claude has not written a line yet; Claude's lines win.
+  // =====================================================================
+  const hash = (s) => { let h = 2166136261; for (const ch of String(s)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return h >>> 0; };
+  const pickBy = (arr, key) => arr[hash(key) % arr.length];
+  const CAPTIONS = {
+    nata: ['pastel de nata #3. I stopped counting, which is a form of self-care', 'breakfast of champions (the champions are all pastries)', 'coffee is €0.90 here. I am never coming home'],
+    slowcoffee: ['sat here for two hours, bought one coffee, nobody minded. this country gets it', 'people-watching level: expert. that pigeon has a plan'],
+    sunrise: ['woke up at 6 for this. worth it. never again. (worth it)', 'I am a morning person now. for about 20 minutes'],
+    tram: ['Tram 28: half rollercoaster, half sardine tin. 10/10', 'the tram went up a hill I would not walk down'],
+    castle: ['climbed to a castle. the castle won', 'king for a day. well, two hours. the peacocks run this place'],
+    belem: ['came for the monastery, stayed for the pastries. I am consistent', 'explorers left from here to discover the world. I discovered four pastries'],
+    tiles: ['500 years of tiles. I have opinions about grout now', 'tile museum. I am unbearable now, sorry in advance'],
+    tileclass: ['painted my own azulejo. it is a fish. or a boat. art is subjective', 'the teacher said "interesting". I am framing it'],
+    lx: ['bought a book I can not read in a language I do not speak. vibes', 'old factory, new me'],
+    bookshop: ['lost an hour in a bookshop. found a postcard from 1974. we are friends now'],
+    river: ['walked to the red bridge. it is further than it looks. everything is', 'river, bridge, golden light. my legs: no'],
+    miradouro: ['this view is free. that should be illegal', 'sunset count: 1. jaw drops: also 1'],
+    nap: ['siesta. cultural immersion. very serious research'],
+    foodhall: ['40 options. ordered the first one I saw. no regrets'],
+    bifana: ['bifana: a pork sandwich that fixes problems I did not know I had', '€3.50 lunch, five-star happiness'],
+    pratododia: ['prato do dia. the waiter chose for me. the waiter was right'],
+    sardines: ['grilled sardines. I smell like the ocean now. on purpose', 'sardines and vinho verde are my whole personality now'],
+    tasting: ['12 courses. understood 7. loved all 12', 'fancy dinner. pretended to know what the foam was'],
+    fado: ['nobody talks during fado. I held a sneeze for four minutes. heroic', 'a stranger sang about longing and I felt it in my soul'],
+    rooftop: ['rooftop drinks. I am basically a postcard now', 'cocktail prices: high. view: higher'],
+    bairro: ['Bairro Alto at 1am: 3,000 strangers, one street, zero regrets', 'made 14 best friends. know two names'],
+    pinkstreet: ['the pink street at night. my outfit was not ready'],
+    surf: ['stood up on the board for two whole seconds. legend', 'the ocean and I had a disagreement. the ocean won'],
+    sintra: ['a palace that looks like a birthday cake. I respect it', 'climbed to a fairytale. the fairytale had 400 stairs'],
+    cascais: ['Atlantic swim. "refreshing" is a strong word. "violent" is more accurate'],
+    wander: ['got lost on purpose. then lost by accident. Alfama wins again'],
+    market: ['a fishmonger told me his life story. I bought one (1) cherry'],
+    work: ['café shift. tips: €6 and a life lesson', 'earning money the old-fashioned way. hate it'],
+    arrive: ['landed. first stop: coffee. priorities', 'Lisbon, hi. I live here now'],
+  };
+  const TWISTS = [
+    { id: 'gull', text: 'A seagull stole my pastel de nata. Mid-bite. In front of everyone. I have never felt so seen.' },
+    { id: 'tram', text: 'Fell asleep on Tram 28 and did the whole loop. Twice. The driver waved the second time.' },
+    { id: 'guide', text: 'Fourteen tourists decided I was their guide. I did not correct them. Made €9 in tips.', earn: 9 },
+    { id: 'cat', text: 'A cat adopted me in Alfama. We have not discussed terms.' },
+    { id: 'karaoke', text: 'Sang at karaoke. Was politely asked to stop. Then one (1) old man asked for an encore.' },
+    { id: 'laundry', text: 'Got so lost I walked past the same laundry line three times. The laundry knows me now.' },
+    { id: 'proposal', text: 'Accidentally photobombed a marriage proposal at a viewpoint. I am in their wedding album now.' },
+    { id: 'sardines', text: 'Ate eleven sardines on a bet with another clone. Lost the bet. Won respect.', cost: 14 },
+    { id: 'hills', text: 'Lisbon has seven hills. My legs say seventy.' },
+    { id: 'tile', text: 'Bought a "genuine antique tile" for €12. The back says made in 2024.', cost: 12 },
+    { id: 'ginja', text: 'Drank ginjinha out of a chocolate cup at 11am. Culturally required, I was told.', cost: 2 },
+    { id: 'wedding', text: 'Got pulled into a stranger\'s wedding party. Danced with the grandmother. She leads.' },
+    { id: 'shoes', text: 'Cobblestones 1, my shoes 0. Walking like a baby deer now.' },
+    { id: 'local', text: 'An old lady asked me for directions. In Portuguese. I gave them. Confidently. Wrongly.' },
+  ];
+  const TEASERS = ['ok. something just happened 💀', 'you are NOT going to believe this', 'don\'t ask. actually, ask. check my feed', 'story time. check my feed'];
+  const COMMENTS = {
+    food: ['ok rude. I had a granola bar', 'save me one', 'the way I just licked my screen'],
+    culture: ['nerd (affectionate)', 'did you touch anything you shouldn\'t have', 'museum fit is impeccable'],
+    nightlife: ['send location', 'you will regret this at 9am', 'who is the guy in the back'],
+    nature: ['show-off', 'I am stuck in a hostel kitchen and you are doing THIS', 'the light is unfair'],
+    adventure: ['no way you stood up', 'brave. stupid. but brave'],
+    twist: ['I\'m crying 💀', 'best thing I\'ve read all week', 'screenshotting this', 'not you becoming a local legend'],
+    social: ['we were robbed of a group photo', 'hiii 👋'],
+    other: ['take me with you', 'ok main character', 'jealous. obviously'],
+  };
+  const captionOf = (e) => e.line || (e.act === 'twist' || e.act === 'meet' ? e.title : pickBy(CAPTIONS[e.act] || [e.title], e.id));
+  function socialOf(c, e) {
+    const h = hash(e.id + 'x');
+    const friends = Object.keys(c.friends);
+    const name = (friends.length && h % 3 ? friends[h % friends.length] : OTHER_CLONES[h % OTHER_CLONES.length][0]).toLowerCase();
+    const likes = 3 + (h % 41) + (e.act === 'twist' ? 30 : 0) + (photoFor(c, e) ? 25 : 0);
+    const pool = COMMENTS[e.cat] || COMMENTS.other;
+    const comment = h % 5 < 3 ? { who: OTHER_CLONES[(h >>> 3) % OTHER_CLONES.length][0].toLowerCase(), text: pool[(h >>> 5) % pool.length] } : null;
+    return { likes, name, comment };
+  }
+  // Real photos are rare and special: only the first time it does that thing.
+  const photoKey = (e) => e.act === 'arrive' ? 'nata' : e.act;
+  function photoFor(c, e) {
+    const k = photoKey(e);
+    if (!PHOTOS[k]) return null;
+    return c.events.find((x) => photoKey(x) === k) === e ? PHOTOS[k] : null;
+  }
+
+  // One plot twist on most days: a small mishap or surprise, posted and texted.
+  function maybeTwist(c, t, place) {
+    const day = dayOf(t);
+    if (c.sim.twistDay === day || Math.random() > 0.45) return;
+    c.sim.twistDay = day;
+    const ai = c.plans?.[day]?.twist;
+    const used = c.sim.usedTwists || [];
+    const tpl = ai ? { id: 'ai' + day, text: ai } : (TWISTS.filter((x) => !used.includes(x.id))[0] ? pick(TWISTS.filter((x) => !used.includes(x.id))) : pick(TWISTS));
+    c.sim.usedTwists = [...used, tpl.id].slice(-12);
+    const cost = Math.min(tpl.cost || 0, Math.max(0, Math.floor(c.money)));
+    c.money += (tpl.earn || 0) - cost;
+    c.mood = clamp(c.mood + 0.06, 0, 1);
+    const e = { id: Math.random().toString(36).slice(2, 9), t, end: t + 0.4 * H, act: 'twist', cat: 'twist', title: tpl.text,
+      area: place.area, lat: place.lat, lng: place.lng, cost, earn: tpl.earn || 0, mood: 0.8, reason: 'self', hl: true, side: true };
+    addEvent(c, e);
+    c.chat ||= [];
+    c.chat.push({ id: Math.random().toString(36).slice(2, 9), from: 'clone', t, at: realAt(c, t), text: pick(TEASERS) });
+  }
+
+  // =====================================================================
+  // Coming back: "while you were away", NEW tags, streak, locked moments,
+  // share cards and passport stamps.
+  // =====================================================================
+  let seenFrom = 0;
+  function markVisit(c) {
+    const t = cloneNow(c);
+    seenFrom = c.seenUntil ?? -1;
+    const fresh = c.events.filter((e) => e.t <= t && e.t > seenFrom && isPost(e));
+    const twists = fresh.filter((e) => e.act === 'twist').length;
+    const unread = (c.chat || []).filter((m) => m.from === 'clone' && m.at <= Date.now()).length - (c.chatSeen || 0);
+    c.seenUntil = t;
+    // Streak: days in a row you checked on it.
+    const day = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+    const st = c.streak || { last: '', n: 0 };
+    let bumped = false;
+    if (st.last !== day) { st.n = st.last === yesterday ? st.n + 1 : 1; st.last = day; bumped = st.n > 1; }
+    c.streak = st;
+    markDirty();
+    const bits = [fresh.length ? `${fresh.length} new moment${fresh.length > 1 ? 's' : ''}` : '', twists ? `${twists} plot twist${twists > 1 ? 's' : ''}` : '', unread > 0 ? `${unread} message${unread > 1 ? 's' : ''}` : ''].filter(Boolean);
+    $('#awayBanner').hidden = !(seenFrom >= 0 && bits.length);
+    $('#awayBanner').innerHTML = `<b>While you were away</b><span>${esc(bits.join(' · '))}</span>`;
+    if (bumped) setTimeout(() => toast(`🔥 ${st.n}-day streak. It noticed.`), 900);
+  }
+
+  function renderLocked(c, t) {
+    const done = new Set(c.events.filter((e) => e.t <= t).map(photoKey));
+    const ids = Object.keys(PHOTOS).filter((k) => k !== 'arrive' && !done.has(k));
+    $('#photoTest').hidden = !ids.length;
+    $('#photoStrip').innerHTML = ids.map((id) => `<div class="shot locked"><figure class="photo real"><img src="${PHOTOS[id]}" alt=""><figcaption>🔒 unlocks when it gets there</figcaption></figure><p class="small">${esc(PHOTO_LINES[id] || '')}</p></div>`).join('');
+  }
+
+  // Share card: one image to post anywhere. Photo (or quote), caption, handle.
+  function wrapLines(ctx, text, max) {
+    const words = text.split(' '); const lines = []; let line = '';
+    for (const w of words) { const test = line ? line + ' ' + w : w; if (ctx.measureText(test).width > max && line) { lines.push(line); line = w; } else line = test; }
+    if (line) lines.push(line);
+    return lines;
+  }
+  async function shareCard(c, e) {
+    const W = 1080, Hh = 1350, cv = document.createElement('canvas');
+    cv.width = W; cv.height = Hh;
+    const ctx = cv.getContext('2d');
+    try { await Promise.all([document.fonts.load('64px "Instrument Serif"'), document.fonts.load('700 34px Manrope')]); } catch (err) { /* system fonts */ }
+    const [g1, g2] = CAT_BG[e.cat] || CAT_BG.travel;
+    const bg = ctx.createLinearGradient(0, 0, 0, Hh); bg.addColorStop(0, g1); bg.addColorStop(1, g2);
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, Hh);
+    const src = photoFor(c, e);
+    const caption = e.act === 'twist' ? e.title : captionOf(e);
+    if (src) {
+      const img = new Image(); img.src = src;
+      try { await img.decode(); } catch (err) { /* keep gradient */ }
+      const ih = 1010, scale = Math.max(W / img.width, ih / img.height);
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, ih); ctx.clip();
+      ctx.drawImage(img, (W - img.width * scale) / 2, (ih - img.height * scale) / 2, img.width * scale, img.height * scale); ctx.restore();
+      ctx.fillStyle = '#0d1424'; ctx.fillRect(0, ih, W, Hh - ih);
+      ctx.fillStyle = '#ffffff'; ctx.font = '64px "Instrument Serif", Georgia, serif';
+      wrapLines(ctx, caption, W - 120).slice(0, 2).forEach((l, i) => ctx.fillText(l, 60, ih + 100 + i * 70));
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = '700 30px Manrope, sans-serif';
+      ctx.fillText(e.act === 'twist' ? 'PLOT TWIST' : actLabel(e.act).toUpperCase(), 70, 140);
+      ctx.fillStyle = '#ffffff'; ctx.font = '86px "Instrument Serif", Georgia, serif';
+      wrapLines(ctx, caption, W - 140).slice(0, 7).forEach((l, i) => ctx.fillText(l, 70, 300 + i * 100));
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.font = '700 30px Manrope, sans-serif';
+    ctx.fillText(`@${c.name.toLowerCase()}.clone · ${AREAS[e.area].name}, Lisbon · day ${dayOf(e.t)}`, 60, Hh - 60);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#ffffff'; ctx.font = '52px "Instrument Serif", Georgia, serif';
+    ctx.fillText('elsewhere', W - 60, Hh - 56);
+    ctx.font = '700 22px Manrope, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText('AI clone', W - 60, Hh - 118);
+    const blob = await new Promise((r) => cv.toBlob(r, 'image/jpeg', 0.9));
+    const url = URL.createObjectURL(blob);
+    const file = new File([blob], `elsewhere-${e.id}.jpg`, { type: 'image/jpeg' });
+    const canShare = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [file] }));
+    openSheet(`<h2>Show it off</h2><img class="share-img" src="${url}" alt="Share card: ${esc(caption)}">
+      <p class="muted small">${canShare ? 'Share it straight to your story, or long-press the image to save it.' : 'Long-press (or right-click) the image to save it, then post it anywhere.'}</p>
+      ${canShare ? '<button class="btn" type="button" id="shareNow">Share</button>' : ''}
+      <button class="btn ghost" type="button" data-close="1">Done</button>`);
+    if (canShare) $('#shareNow').onclick = async () => { try { await navigator.share({ files: [file], text: `My AI clone in Lisbon 💀 #elsewhere` }); } catch (err) { /* cancelled */ } };
+  }
+
+  // Passport: every bucket-list wish is a stamp to collect.
+  function renderPassport(c) {
+    const done = c.bucket.filter((b) => b.done).length;
+    $('#tab-bucket').innerHTML = `<p class="muted small">${done} of ${c.bucket.length} stamps. It goes after the empty ones on its own.</p><div class="stamps">` +
+      `<div class="stamp done city" style="--r:-6deg"><b>LISBOA</b><span>arrived · day 1</span></div>` +
+      c.bucket.map((b) => `<div class="stamp ${b.done ? 'done' : ''}" style="--r:${(hash(b.id) % 15) - 7}deg"><b>${esc(b.text)}</b><span>${b.done ? `day ${dayOf(b.doneAt)}` : 'not yet'}</span></div>`).join('') + '</div>';
   }
 
   // =====================================================================
@@ -1527,45 +1664,7 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
   const avatarSvg = (a, label) => `<svg viewBox="0 0 100 100" role="img" aria-label="${esc(label || 'Avatar')}">${avatarMarkup(a)}</svg>`;
 
   // A drawn "photo" of a moment: sky by time of day, a scene by activity, the avatar in front.
-  function scenePhoto(e, a) {
-    if (PHOTOS[e.act]) return realPhoto(e.act, e.title);
-    const h = hourOf(e.t);
-    const sky = h < 6 || h >= 21.5 ? ['#0f1b3d', '#2a3f73'] : h < 8 ? ['#f3a683', '#f7d9b5'] : h < 17 ? ['#6db6ea', '#d3ecfa']
-      : h < 19.5 ? ['#ee8459', '#f7c873'] : ['#3d3b73', '#d9775c'];
-    const night = h < 6 || h >= 21.5;
-    const id = 'sc' + (avSeq++);
-    const roofs = [0, 40, 78, 120, 165, 205, 250, 290].map((x, i) => `<rect x="${x}" y="${92 - (i % 3) * 10}" width="38" height="${60 + (i % 3) * 10}" fill="${['#e9dccb', '#f1c9a5', '#dfe7ef'][i % 3]}"/><path d="M${x - 2} ${92 - (i % 3) * 10} L${x + 19} ${80 - (i % 3) * 10} L${x + 40} ${92 - (i % 3) * 10} Z" fill="#c4613c"/>`).join('');
-    const river = `<rect y="150" width="320" height="50" fill="#2f78b0"/><path d="M0 158 Q40 152 80 158 T160 158 T240 158 T320 158" stroke="#9fd0f0" stroke-width="2" fill="none"/>`;
-    const byAct = {
-      tram: `${roofs}<rect x="150" y="112" width="120" height="44" rx="8" fill="#f2b705"/><rect x="160" y="120" width="22" height="16" fill="#cfe8f7"/><rect x="190" y="120" width="22" height="16" fill="#cfe8f7"/><rect x="220" y="120" width="22" height="16" fill="#cfe8f7"/><rect x="150" y="150" width="120" height="6" fill="#7a5a00"/><path d="M0 170 L320 160 L320 200 L0 200 Z" fill="#a39e94"/>`,
-      castle: `<path d="M0 200 L0 130 Q120 95 320 120 L320 200 Z" fill="#6a9a4f"/><path d="M90 128 h20 v-10 h10 v10 h20 v-10 h10 v10 h20 v-10 h10 v10 h20 v40 h-110 Z" fill="#a08f7c"/>`,
-      sintra: `<path d="M0 200 L0 120 Q160 60 320 110 L320 200 Z" fill="#4f7d3a"/><rect x="150" y="70" width="70" height="40" fill="#d8b04a"/><rect x="180" y="52" width="16" height="22" fill="#c2412d"/><circle cx="215" cy="66" r="10" fill="#e9dccb"/><rect x="0" y="0" width="320" height="200" fill="#ffffff" opacity="0.18"/>`,
-      surf: `<rect y="120" width="320" height="80" fill="#2f78b0"/><path d="M0 130 Q30 112 60 130 T120 130 T180 130 T240 130 T300 130 T360 130" stroke="#ffffff" stroke-width="5" fill="none"/><rect x="180" y="110" width="110" height="14" rx="7" fill="#f2b705" transform="rotate(-12 235 117)"/>`,
-      cascais: `<rect y="135" width="320" height="65" fill="#2f78b0"/><rect y="170" width="320" height="30" fill="#ead6a4"/><circle cx="270" cy="40" r="18" fill="#fff4c2"/>`,
-      belem: `${river}<rect x="190" y="70" width="40" height="80" fill="#e6dccd"/><rect x="198" y="56" width="24" height="16" fill="#e6dccd"/><path d="M196 56 L210 44 L224 56 Z" fill="#cbbfae"/>`,
-    };
-    const byCat = {
-      nature: `${roofs}${river}<path d="M200 150 L210 112 L290 112 L300 150" stroke="#c2412d" stroke-width="4" fill="none"/><path d="M210 112 L210 150 M290 112 L290 150" stroke="#c2412d" stroke-width="5"/>`,
-      culture: byAct.castle,
-      sight: roofs + '<path d="M0 160 L320 150 L320 200 L0 200 Z" fill="#a39e94"/>',
-      food: `<rect y="120" width="320" height="80" fill="#8a5a3b"/><ellipse cx="220" cy="150" rx="46" ry="16" fill="#ffffff"/><ellipse cx="220" cy="147" rx="28" ry="9" fill="${e.act === 'sardines' ? '#9aa4ad' : '#e6a64b'}"/><rect x="278" y="118" width="14" height="30" rx="3" fill="#cfe8f7" opacity="0.8"/>`,
-      nightlife: `<rect y="70" width="320" height="130" fill="#1b2240"/>${[20, 60, 100, 140, 180, 220, 260, 300].map((x, i) => `<circle cx="${x}" cy="${78 + (i % 2) * 6}" r="4" fill="#f7d36b"/>`).join('')}<path d="M0 78 Q160 96 320 78" stroke="#555" fill="none"/>`,
-      adventure: byAct.surf,
-      rest: `<rect x="150" y="30" width="140" height="110" fill="${sky[1]}" stroke="#7a5a3b" stroke-width="8"/><path d="M220 30 L220 140 M150 85 L290 85" stroke="#7a5a3b" stroke-width="5"/><rect y="150" width="320" height="50" fill="#e9dccb"/>`,
-      shopping: `${roofs}<rect x="160" y="110" width="140" height="60" fill="#5b3a24"/><rect x="170" y="118" width="120" height="44" fill="#f1c9a5"/>`,
-      work: `<rect y="125" width="320" height="75" fill="#6b4226"/><rect x="200" y="105" width="22" height="24" rx="4" fill="#ffffff"/><path d="M222 112 q10 0 10 8 q0 8 -10 8" stroke="#ffffff" stroke-width="3" fill="none"/>`,
-      social: `${roofs}<g transform="translate(200,92) scale(0.95)">${avatarMarkup({ skin: ((a?.skin ?? 1) + 2) % 5, hair: 'curly', hairColor: 3, extra: 'none', shirt: 2 }, '#f3e9da')}</g>`,
-      travel: `<rect y="150" width="320" height="50" fill="#9a9a9a"/><path d="M170 60 L280 50 L292 58 L180 72 Z M220 56 L200 30 L214 30 L240 54 Z M210 66 L196 86 L208 86 L228 64 Z" fill="#ffffff"/>`,
-      note: roofs,
-    };
-    const scene = byAct[e.act] || byCat[e.cat] || roofs;
-    const stars = night ? [[30, 20], [80, 40], [130, 15], [210, 30], [260, 18], [300, 45]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.6" fill="#ffffff"/>`).join('') : '';
-    return `<svg class="photo" viewBox="0 0 320 200" role="img" aria-label="Placeholder photo: ${esc(e.title)}">` +
-      `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient></defs>` +
-      `<rect width="320" height="200" fill="url(#${id})"/>${stars}${scene}` +
-      `<g transform="translate(14,96)">${avatarMarkup(a, sky[1])}</g>` +
-      `<rect x="222" y="178" width="92" height="16" rx="8" fill="#000000" opacity="0.35"/><text x="268" y="190" text-anchor="middle" font-size="10" fill="#ffffff" font-family="Manrope, sans-serif">AI clone · sketch</text></svg>`;
-  }
+
 
   // =====================================================================
   // Map
@@ -1638,7 +1737,7 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
   let lastLogKey = '', lastPlanKey = '', tab = 'home', sub = 'grid', openPostcards = new Set();
   function go(name) {
     tab = name;
-    for (const k of ['home', 'map', 'shop', 'chat', 'me']) $('#scr-' + k).hidden = k !== name;
+    for (const k of ['home', 'shop', 'chat', 'me']) $('#scr-' + k).hidden = k !== name;
     document.querySelectorAll('[data-go]').forEach((x) => { if (x.closest('.bottomnav')) x.setAttribute('aria-current', x.dataset.go === name ? 'page' : 'false'); });
     if (name === 'chat') renderChat(clone, true);
     if (name === 'shop') renderShop(clone);
@@ -1664,11 +1763,6 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
     $('#speedLabel').textContent = `${c.speed}× real time`;
     $('#money').textContent = euro(c.money);
     $('#money').style.color = c.money < 60 ? 'var(--bad)' : '';
-    $('#money2').textContent = euro(c.money);
-    $('#energyText').textContent = Math.round(c.energy);
-    $('#energyBar').style.width = c.energy + '%';
-    $('#moodText').textContent = moodWord(c.mood);
-    $('#moodBar').style.width = Math.round(c.mood * 100) + '%';
 
     // Now
     const cur = currentEvent(c, t);
@@ -1676,7 +1770,6 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
       const pos = positionAt(c, t);
       $('#nowWhat').textContent = pos.moving ? `On the way to ${AREAS[cur.area].name}` : cur.sleep ? cur.title.replace('Night at', 'Asleep at') : cur.title;
       $('#nowWhere').textContent = `${AREAS[cur.area].name} · until ${hhmm(cur.end)}`;
-      if ($('#nowPhoto').dataset.id !== cur.id) { $('#nowPhoto').dataset.id = cur.id; $('#nowPhoto').innerHTML = postMedia(c, cur); }
       const pct = clamp((t - cur.t) / (cur.end - cur.t), 0, 1);
       $('#nowBar').style.width = (pct * 100).toFixed(1) + '%';
       $('#nowUntil').textContent = realDur(cur.end - t, c.speed);
@@ -1697,13 +1790,13 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
     const qCard = $('#questionCard');
     if (q && (q.answer == null || q.kind === 'choice')) {
       qCard.hidden = false;
-      $('#questionLabel').textContent = q.kind === 'help' ? `${c.name}'s clone needs you` : `${c.name}'s clone asks`;
+      $('#questionLabel').textContent = q.kind === 'help' ? 'SOS from your clone' : 'Vote';
       $('#questionText').textContent = q.text;
       const opts = q.labels.map((l, i) => `<button class="opt" type="button" data-answer="${i}" aria-pressed="${q.answer === q.options[i]}" ${q.answer != null && q.kind === 'help' ? 'disabled' : ''}>${esc(l)}</button>`).join('');
       if ($('#questionOptions').dataset.key !== opts) { $('#questionOptions').innerHTML = opts; $('#questionOptions').dataset.key = opts; }
       const left = q.deadline - t;
       $('#questionDeadline').textContent = q.answer != null ? 'Got it. Your clone will remember you picked this.'
-        : left > 0 ? `Answer within ${realDur(left, c.speed)} (clone time ${hhmm(q.deadline)}), or it decides on its own.` : 'It is deciding now…';
+        : left > 0 ? `⏳ ${realDur(left, c.speed)} left, then it decides alone. Risky.` : 'Too late. It is deciding now…';
     } else {
       qCard.hidden = true;
     }
@@ -1718,66 +1811,11 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
     const key = c.events.filter((e) => e.t <= t).length + ':' + c.events.map((e) => (e.react || '') + (e.postcard ? 'p' : '') + (e.line ? 'l' : '') + (e.story ? 's' : '')).join('') + ':' + feedDays + ':' + Object.keys(c.diaries).length + ':' + !!sample;
     if (force || key !== lastLogKey) {
       lastLogKey = key;
-      renderFeed(c, t); renderPhotoTest(c, t); renderGrid(c, t); renderProfile(c, t);
-      renderLog(c, t); renderBucket(c); renderMe(c);
+      renderFeed(c, t); renderLocked(c, t); renderGrid(c, t); renderProfile(c, t); renderPassport(c);
     }
   }
 
-  function renderLog(c, t) {
-    const box = $('#tab-log');
-    const shown = c.events.filter((e) => e.t <= t);
-    const days = {};
-    for (const e of shown) (days[dayOf(e.t)] ||= []).push(e);
-    const dayNums = Object.keys(days).map(Number).sort((a, b) => b - a);
-    let html = '';
-    for (const d of dayNums) {
-      const evs = days[d].slice().reverse();
-      const spent = days[d].reduce((s, e) => s + (e.cost || 0), 0);
-      const earned = days[d].reduce((s, e) => s + (e.earn || 0), 0);
-      html += `<div class="card"><div class="day-head"><h2>Day ${d}</h2><span class="muted small mono">spent ${euro(spent)}${earned ? ` · earned ${euro(earned)}` : ''}</span></div>`;
-      if (sample) {
-        html += `<div><button class="btn ghost small" type="button" data-diary="${d}">${c.diaries[d] ? 'Rewrite' : 'Write'} the diary for this day</button></div>`;
-      }
-      html += `<div class="postcard" data-diary-out="${d}" ${c.diaries[d] ? '' : 'hidden'}>${c.diaries[d] ? esc(c.diaries[d]) : ''}</div><div>`;
-      for (const e of evs) {
-        const meta = [`<span>${esc(AREAS[e.area].name)}</span>`];
-        if (e.cost) meta.push(`<span class="cost">−${euro(e.cost)}</span>`);
-        if (e.earn) meta.push(`<span class="earn">+${euro(e.earn)}</span>`);
-        if (!e.sleep && e.cat !== 'note') meta.push(`<span>${moodWord(e.mood)}</span>`);
-        const why = e.reason === 'you' ? '<div class="note">You picked this one.</div>' : e.reason === 'gut' ? '<div class="note">No answer from you, so it followed its gut.</div>' : e.reason === 'work' ? '<div class="note">Money ran low, so it took a job.</div>' : '';
-        const tick = e.ticked ? `<div class="note" style="color:var(--good);font-style:normal;font-weight:700">✓ Bucket list: ${esc(e.ticked)}</div>` : '';
-        const canPost = false;
-        const acts = (e.sleep || e.cat === 'note') ? '' : `<div class="acts">
-            <button class="react" type="button" data-react="love" data-id="${e.id}" aria-pressed="${e.react === 'love'}">Love this</button>
-            <button class="react" type="button" data-react="meh" data-id="${e.id}" aria-pressed="${e.react === 'meh'}">Meh</button>
-            ${canPost ? `<button class="react" type="button" data-post="${e.id}">${e.postcard ? 'Postcard' : 'Read postcard'}</button>` : ''}
-          </div>`;
-        const photo = '';
-        const pc = e.postcard && openPostcards.has(e.id) ? `<div class="postcard">${esc(e.postcard)}</div>` : `<div class="postcard" data-pc="${e.id}" hidden></div>`;
-        const voice = e.line ? `<div class="voice">“${esc(e.line)}”</div>` : '';
-        const story = e.story ? `<div class="story">${esc(e.story)}</div>` : '';
-        html += `<div class="entry ${e.hl ? 'hl' : ''}"><time>${hhmm(e.t)}</time><div><div class="t">${esc(e.title)}</div>${voice}<div class="meta">${meta.join('')}</div>${why}${tick}${story}${photo}${acts}${pc}</div></div>`;
-      }
-      html += '</div></div>';
-    }
-    box.innerHTML = html || '<div class="card"><p class="muted">The journal starts when your clone lands.</p></div>';
-  }
 
-  function renderBucket(c) {
-    const done = c.bucket.filter((b) => b.done).length;
-    $('#tab-bucket').innerHTML = `<h2>Bucket list</h2><p class="muted small">${done} of ${c.bucket.length} done. These grew out of its personality, so it goes after them on its own.</p><ul>` +
-      c.bucket.map((b) => `<li><span class="${b.done ? 'done' : 'muted'}">${b.done ? '✓' : '○'}</span><span>${esc(b.text)}${b.done ? ` <span class="muted small">· day ${dayOf(b.doneAt)}</span>` : ''}</span></li>`).join('') + '</ul>';
-  }
-
-  function renderMe(c) {
-    const friends = Object.entries(c.friends);
-    const likes = Object.entries(c.learned).filter(([, v]) => Math.abs(v) > 0.05).sort((a, b) => b[1] - a[1]);
-    $('#tab-me').innerHTML = `<h2>Who it is becoming</h2><p class="muted small">It started from your answers. Every experience, your choices and your reactions nudge it.</p>
-      <div class="traits">${Object.entries(TRAITS).map(([k, [lo, hi]]) => `<div class="trait"><span>${lo}</span><span class="bar"><i style="left:${(c.traits[k] * 100).toFixed(0)}%"></i></span><span>${hi}</span></div>`).join('')}</div>
-      <h3>Learned from you</h3><p class="small">${likes.length ? likes.map(([k, v]) => `${v > 0 ? 'More' : 'Less'} ${k}`).join(' · ') : 'Nothing yet. React to journal entries and answer its questions.'}</p>
-      <h3>Clones it has met</h3>${friends.length ? `<ul class="friends">${friends.map(([n, f]) => `<li><b>${esc(n)}</b> <span class="muted small">from ${esc(f.city)} · met ${f.meets}×</span></li>`).join('')}</ul>` : '<p class="small muted">None yet.</p>'}
-      <p class="muted small">Other clones are simulated in this test. Friends' real clones come later.</p>`;
-  }
 
   // =====================================================================
   // Setup flow
@@ -1790,10 +1828,10 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
     $('#setupProgress').style.width = `${(setup.step / total) * 100}%`;
     const body = $('#setupBody');
     if (setup.step === 0 && setup.answers.length === 0 && !setup.started) {
-      $('#setupTitle').textContent = 'Make your clone';
+      $('#setupTitle').textContent = 'Clone yourself';
       body.innerHTML = `<div style="display:flex;flex-direction:column;gap:12px">
-        <p>Your clone is a copy of you that lives its own life in Lisbon: cafés, day trips, nights out, money running low. You can follow it live, read its journal, and nudge it. It grows from what it lives through and from what you like.</p>
-        <p class="muted small">Eight quick questions decide who it starts as.</p>
+        <p>Your clone moves to Lisbon, lives its best life, gets into trouble, and posts about all of it. You watch, vote, and judge.</p>
+        <p class="muted small">Six questions. Be honest. It will be.</p>
         <button class="btn" type="button" id="beginBtn">Start</button></div>`;
       $('#beginBtn').onclick = () => { setup.started = true; renderSetup(); };
       return;
@@ -1807,15 +1845,13 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
       return;
     }
     if (setup.step === QUESTIONS.length) {
-      $('#setupTitle').textContent = 'Name and budget';
+      $('#setupTitle').textContent = 'What should it call you?';
       body.innerHTML = `<div style="display:flex;flex-direction:column;gap:14px">
-        <label for="nameIn">Your name (the clone writes to you)</label>
+        <label for="nameIn">Your first name. It texts you.</label>
         <input id="nameIn" type="text" maxlength="24" autocomplete="given-name" value="${esc(setup.name)}">
-        <div><p style="margin-bottom:8px">Starting budget</p><div class="chips">${BUDGETS.map(([l, v]) => `<button class="chip" type="button" data-budget="${v}" aria-pressed="${setup.budget === v}">${l} · ${euro(v)}</button>`).join('')}</div></div>
-        <div><p style="margin-bottom:8px">Test speed</p><div class="chips">${SPEEDS.map(([v, l]) => `<button class="chip" type="button" data-sp="${v}" aria-pressed="${setup.speed === v}">${l}</button>`).join('')}</div>
-        <p class="muted small" style="margin-top:6px">3× is the planned real feel: a Lisbon day passes in 8 real hours. Faster speeds are for testing.</p></div>
+        <div><p style="margin-bottom:8px">Clock speed (for testing)</p><div class="chips">${SPEEDS.map(([v, l]) => `<button class="chip" type="button" data-sp="${v}" aria-pressed="${setup.speed === v}">${l}</button>`).join('')}</div>
+        <p class="muted small" style="margin-top:6px">3× is the real thing: a Lisbon day takes 8 hours. 30× lets you see a day in under an hour.</p></div>
         <button class="btn" type="button" id="nextBtn">Next</button></div>`;
-      body.querySelectorAll('[data-budget]').forEach((b) => b.onclick = () => { setup.name = $('#nameIn').value; setup.budget = Number(b.dataset.budget); renderSetup(); });
       body.querySelectorAll('[data-sp]').forEach((b) => b.onclick = () => { setup.name = $('#nameIn').value; setup.speed = Number(b.dataset.sp); renderSetup(); });
       $('#nextBtn').onclick = () => { setup.name = $('#nameIn').value.trim() || 'You'; setup.step++; renderSetup(); };
       return;
@@ -1844,14 +1880,29 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
     }
     // Summary
     const traits = traitsFromAnswers();
-    $('#setupTitle').textContent = `Meet ${setup.name}'s clone`;
+    $('#setupTitle').textContent = `Meet ${setup.name.toLowerCase()}.clone`;
+    const ranked = Object.entries(traits).sort((a, b) => Math.abs(b[1] - 0.5) - Math.abs(a[1] - 0.5));
+    const words = ranked.slice(0, 3).map(([k, v]) => v > 0.5 ? TRAITS[k][1] : TRAITS[k][0]);
+    const [tk, tv] = ranked[0];
+    const VERDICT = {
+      adventure: ['Will discover the hotel pool and nothing else.', 'Will be on a surfboard before lunch. Unclear if on purpose.'],
+      social: ['Will befriend exactly one cat.', 'Will know the whole street by Wednesday.'],
+      spender: ['Will count every cent and still feel rich.', 'Will spend the budget by Thursday. Possibly Tuesday.'],
+      foodie: ['Will survive on toast.', 'Will plan the whole trip around pastries.'],
+      nightOwl: ['Will be asleep by ten, smug at seven.', 'Will see every sunrise. From the wrong side.'],
+      culture: ['Will climb anything taller than a house.', 'Will read every museum sign. Every. Single. One.'],
+      nature: ['Will treat parks as a rumour.', 'Will look for a mountain in a city.'],
+      spontaneous: ['Will make a spreadsheet for the spreadsheet.', 'Will end up somewhere nobody planned. Including it.'],
+    };
+    const verdict = VERDICT[tk][tv > 0.5 ? 1 : 0];
     body.innerHTML = `<div style="display:flex;flex-direction:column;gap:14px">
       <div class="av-preview">${avatarSvg(setup.avatar, 'Your clone')}</div>
-      <div class="traits">${Object.entries(TRAITS).map(([k, [lo, hi]]) => `<div class="trait"><span>${lo}</span><span class="bar"><i style="left:${(traits[k] * 100).toFixed(0)}%"></i></span><span>${hi}</span></div>`).join('')}</div>
-      <p class="muted small">Budget ${euro(setup.budget)} · ${setup.speed}× real time · first stop: Lisbon</p>
-      <p class="muted small">Claude acts as your clone's mind: it plans its days, writes its journal and tells you about the clones it meets. You'll be asked once to allow that. Without it, the clone follows simple instincts.</p>
-      <button class="btn" type="button" id="flyBtn">Send it to Lisbon</button>
-      <button class="btn ghost" type="button" id="backBtn">Change my answers</button></div>`;
+      <div class="chips">${(words.length ? words : ['Balanced']).map((w) => `<span class="chip">${esc(w)}</span>`).join('')}</div>
+      <p class="ask" style="font-family:var(--font-display);font-size:24px;line-height:1.2">${esc(verdict)}</p>
+      <p>It gets ${euro(setup.budget)}, a one-way ticket to Lisbon, and zero supervision.</p>
+      <p class="muted small">Claude plays its mind: it plans its days, writes its posts and texts you back. You'll be asked once to allow that.</p>
+      <button class="btn" type="button" id="flyBtn">Send it to Lisbon ✈️</button>
+      <button class="btn ghost" type="button" id="backBtn">Redo the questions</button></div>`;
     $('#flyBtn').onclick = async () => {
       clone = newClone(setup.name, traits, setup.budget, setup.speed);
       clone.avatar = { ...setup.avatar };
@@ -1888,6 +1939,8 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
     $('#chatAvatar').innerHTML = avatarSvg(clone.avatar, `${clone.name}'s clone`);
     $('#chatName').textContent = `${clone.name}'s clone`;
     render(true);
+    markVisit(clone);
+    render(true);
     // One automatic check-in per page load (on opening, or right after sending it off).
     if (sample && !checkIn.autoUsed && needsCheckIn(clone)) { checkIn.autoUsed = true; runCheckIn(clone); }
   }
@@ -1898,16 +1951,7 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
     if (b.dataset.checkin) runCheckIn(clone);
     else if (b.dataset.answer != null) answer(clone, Number(b.dataset.answer));
     else if (b.dataset.react) react(clone, b.dataset.id, b.dataset.react);
-    else if (b.dataset.post) {
-      const e = clone.events.find((x) => x.id === b.dataset.post);
-      const el = document.querySelector(`[data-pc="${b.dataset.post}"]`);
-      if (!e) return;
-      if (e.postcard) { openPostcards.has(e.id) ? openPostcards.delete(e.id) : openPostcards.add(e.id); render(true); return; }
-      if (el) { el.hidden = false; openPostcards.add(e.id); writePostcard(clone, e, el); }
-    } else if (b.dataset.diary) {
-      const d = Number(b.dataset.diary);
-      writeDiary(clone, d, document.querySelector(`[data-diary-out="${d}"]`), b);
-    } else if (b.dataset.speed) {
+    else if (b.dataset.speed) {
       setSpeed(clone, Number(b.dataset.speed));
       document.querySelectorAll('[data-speed]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.speed === b.dataset.speed)));
       render(true);
@@ -1916,12 +1960,12 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
     } else if (b.dataset.sub) {
       sub = b.dataset.sub;
       document.querySelectorAll('[data-sub]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
-      for (const k of ['grid', 'log', 'bucket', 'me']) $('#tab-' + k).hidden = sub !== k;
+      for (const k of ['grid', 'bucket']) $('#tab-' + k).hidden = sub !== k;
     } else if (b.dataset.more) {
       feedDays += 3; render(true);
     } else if (b.dataset.share) {
       const e = clone.events.find((x) => x.id === b.dataset.share);
-      if (e) shareMoment(clone, e);
+      if (e) shareCard(clone, e);
     } else if (b.dataset.reply) {
       const e = clone.events.find((x) => x.id === b.dataset.reply);
       go('chat');
@@ -1934,11 +1978,16 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
       buy(clone, b.dataset.buy);
     } else if (b.dataset.close) {
       closeSheet();
+    } else if (b.dataset.map) {
+      $('#mapSheet').hidden = false;
+    } else if (b.dataset.closemap) {
+      $('#mapSheet').hidden = true;
     }
   });
 
   $('#sheet').addEventListener('click', (ev) => { if (ev.target === $('#sheet')) closeSheet(); });
-  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && !$('#sheet').hidden) closeSheet(); });
+  $('#mapSheet').addEventListener('click', (ev) => { if (ev.target === $('#mapSheet')) $('#mapSheet').hidden = true; });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { closeSheet(); $('#mapSheet').hidden = true; } });
   $('#chatForm').addEventListener('submit', (ev) => {
     ev.preventDefault();
     if (!clone || chatSending.busy) return;
@@ -1956,6 +2005,7 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
     }
     await store.clear(); clone = null; dirty = false;
     Object.assign(setup, { step: 0, answers: [], started: false, avatar: { ...DEFAULT_AV } });
+    seenFrom = -1;
     renderSetup();
   });
 

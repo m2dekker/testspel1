@@ -26,20 +26,25 @@ cartoon. The wow is **seeing yourself somewhere you wish you were**. So:
 - **Dream destinations,** not only Lisbon: Tokyo, Amalfi, Iceland, Bali.
 - **The AI planning engine stays** and decides which moments deserve a photo.
 
-## App layout (Instagram-simple)
+## App layout (v2: funny, addictive, show-off)
 
-Five tabs at the bottom, each one short so there is little scrolling:
+Cut: map tab, stats, plan chips, diary, personality sliders, postcards, budget choice,
+drawn sketches. Four tabs: **Home, Messages, Shop, Profile.**
 
-- **Home:** a "now" strip (what it's doing, until when), today's plan as one row of
-  chips, its question if it has one, then a **feed of moments**. Only highlights become
-  posts (photo or a clean text card, caption in its voice, heart, reply, share, postcard).
-  Everything else goes to the diary.
-- **Map:** where it is right now, today's trail.
-- **Shop:** drops, plane tickets, membership, extras. For now a "fake door" test:
-  nothing is charged, taps are counted to learn what people would buy.
-- **Messages:** chat with your clone.
-- **Profile:** Instagram-style header (moments, clones met, bucket list), a grid of its
-  moments, the diary, bucket list, personality, and settings.
+- **Voice:** funny, dry, self-aware, a little chaotic. Claude writes captions and plans in
+  that voice; built-in captions cover the rest.
+- **Plot twists:** most days something small goes wrong or weird (a seagull steals its
+  pastel de nata, 14 tourists think it's their guide). Posted, and it texts you a
+  cliffhanger: "ok. something just happened 💀".
+- **Social proof:** other clones like and comment on its posts.
+- **Coming back:** "While you were away" banner, NEW tags, a day streak, a daily **vote**
+  with a countdown ("then it decides alone. Risky."), locked photo moments that unlock when
+  it gets there.
+- **Show-off:** every post turns into a share card (photo, caption, handle, "elsewhere ·
+  AI clone"); a **passport** of stamps for every bucket-list wish.
+- **Onboarding:** six funny questions, a one-line verdict ("Will spend the budget by
+  Thursday. Possibly Tuesday."), and the first post is a real photo.
+- Real photos are rare on purpose: only the first time it does something.
 
 ## Instagram channel (idea, not built)
 
