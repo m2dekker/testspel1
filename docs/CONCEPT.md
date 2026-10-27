@@ -26,6 +26,32 @@ cartoon. The wow is **seeing yourself somewhere you wish you were**. So:
 - **Dream destinations,** not only Lisbon: Tokyo, Amalfi, Iceland, Bali.
 - **The AI planning engine stays** and decides which moments deserve a photo.
 
+## App layout (Instagram-simple)
+
+Five tabs at the bottom, each one short so there is little scrolling:
+
+- **Home:** a "now" strip (what it's doing, until when), today's plan as one row of
+  chips, its question if it has one, then a **feed of moments**. Only highlights become
+  posts (photo or a clean text card, caption in its voice, heart, reply, share, postcard).
+  Everything else goes to the diary.
+- **Map:** where it is right now, today's trail.
+- **Shop:** drops, plane tickets, membership, extras. For now a "fake door" test:
+  nothing is charged, taps are counted to learn what people would buy.
+- **Messages:** chat with your clone.
+- **Profile:** Instagram-style header (moments, clones met, bucket list), a grid of its
+  moments, the diary, bucket list, personality, and settings.
+
+## Instagram channel (idea, not built)
+
+Two different things, keep them apart:
+
+1. **A showcase account run by us** (one stand-in clone traveling, e.g. @elsewhere.clone):
+   marketing, tests which content gets attention, cheap to start by posting by hand.
+   Must be labeled as AI (Meta's "AI info" label, and in the bio).
+2. **Players sharing their own clone's moments:** via the phone's share sheet (built in the
+   prototype). Automatic posting needs Instagram business or creator accounts and app
+   review, so later, if at all.
+
 ## Decisions so far
 
 | Topic | Decision |

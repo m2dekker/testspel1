@@ -185,6 +185,106 @@
   footer { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 8px; }
   .link { background: none; border: 0; padding: 0; color: var(--cobalt); text-decoration: underline; font-size: 13px; }
 
+
+  /* ---------- app shell: Instagram-simple ---------- */
+  #game { display: flex; flex-direction: column; gap: 14px; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  #game[hidden] { display: none !important; }
+  .appbar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin: -18px calc(-1 * max(16px, env(safe-area-inset-left, 0px))) 0; padding: 12px max(16px, env(safe-area-inset-left, 0px)) 10px;
+    background: var(--bg); border-bottom: 1px solid var(--line); }
+  .brand { font-family: var(--font-display); font-size: 30px; line-height: 1; letter-spacing: -0.01em; }
+  .appbar-r { display: flex; align-items: center; gap: 8px; }
+  .appbar-r b { font-size: 15px; font-weight: 500; }
+  .pill { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px 10px; font-size: 14px; }
+  .screen { display: flex; flex-direction: column; gap: 14px; }
+  .screen[hidden] { display: none !important; }
+  .bottomnav { position: fixed; z-index: 6; bottom: 0; left: 50%; transform: translateX(-50%); width: min(560px, 100%);
+    display: grid; grid-template-columns: repeat(5, 1fr); background: var(--surface); border-top: 1px solid var(--line);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px)); }
+  .bottomnav button { position: relative; background: none; border: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0; color: var(--muted); font-size: 11px; min-height: 48px; }
+  .bottomnav svg { width: 26px; height: 26px; }
+  .bottomnav button[aria-current="page"] { color: var(--ink); font-weight: 700; }
+  .bottomnav button[aria-current="page"] svg { stroke-width: 2.4; }
+  .bottomnav .badge { position: absolute; top: 0; left: calc(50% + 6px); min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--bad); color: #fff; font-size: 11px; line-height: 18px; font-style: normal; }
+  .ring { display: inline-flex; border-radius: 50%; padding: 2px; background: conic-gradient(var(--tram), #e0603a, var(--cobalt), var(--tram)); flex: none; }
+  .ring svg { width: 46px; height: 46px; border-radius: 50%; background: var(--surface); border: 2px solid var(--surface); }
+  .ring.big svg { width: 84px; height: 84px; }
+  .now-strip { display: flex; align-items: center; gap: 12px; text-align: left; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px; }
+  .now-strip .grow { display: flex; flex-direction: column; gap: 2px; }
+  .now-strip .what { font-weight: 700; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .now-strip .bar { display: block; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; margin-top: 4px; }
+  .now-strip .bar i { display: block; height: 100%; background: var(--tram); }
+  .today { display: flex; flex-direction: column; gap: 8px; }
+  .today .voice { font-size: 18px; }
+  .slots { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -2px; padding: 2px; }
+  .slots::-webkit-scrollbar { display: none; }
+  .slot { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: 13px; white-space: nowrap; }
+  .slot b { font-weight: 600; color: var(--muted); margin-right: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .slot.did { border-color: transparent; background: var(--cobalt-soft); }
+  .slot.now { border-color: var(--tram); box-shadow: inset 0 0 0 1px var(--tram); }
+  .slot.skip { opacity: 0.5; text-decoration: line-through; }
+  .question { padding: 14px; gap: 10px; }
+  .question .ask { font-size: 21px; }
+  .post { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .post-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+  .post-head .ring svg { width: 32px; height: 32px; }
+  .post-head b { display: block; font-size: 14px; }
+  .post-head span.muted { display: block; font-size: 12px; }
+  .post .photo, .post .photo.real { margin: 0; border-radius: 0; }
+  .post-actions { display: flex; align-items: center; gap: 4px; padding: 6px 8px 0; }
+  .icon-btn { background: none; border: 0; padding: 8px; border-radius: 50%; color: var(--ink); display: inline-flex; min-width: 40px; min-height: 40px; align-items: center; justify-content: center; }
+  .icon-btn svg { width: 25px; height: 25px; }
+  .icon-btn[aria-pressed="true"] { color: var(--bad); }
+  .icon-btn[aria-pressed="true"] svg { fill: currentColor; }
+  .post-body { padding: 2px 14px 14px; display: flex; flex-direction: column; gap: 4px; }
+  .post-body .cap { font-size: 15px; line-height: 1.4; }
+  .post-body .cap b { margin-right: 6px; }
+  .post-body .meta { font-size: 12px; color: var(--muted); }
+  .post .postcard { margin: 0 14px 14px; }
+  .post .story { margin: 0; }
+  .quote-card { aspect-ratio: 4 / 3; display: flex; flex-direction: column; justify-content: space-between; padding: 22px; color: #fff; }
+  .quote-card p { font-family: var(--font-display); font-size: 27px; line-height: 1.2; }
+  .quote-card span { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
+  .more { align-self: center; }
+  .profile { display: flex; align-items: center; gap: 16px; }
+  .profile h1 { font-size: 34px; }
+  .counts { display: flex; gap: 16px; margin-top: 6px; font-size: 13px; }
+  .counts b { display: block; font-size: 17px; font-family: var(--font-data); font-weight: 500; }
+  .seg { display: flex; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .seg button { flex: 1; background: none; border: 0; padding: 10px 6px; font-weight: 700; color: var(--muted); border-bottom: 2px solid transparent; white-space: nowrap; font-size: 14px; }
+  .seg button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+  .grid[hidden] { display: none; }
+  .grid button { padding: 0; border: 0; aspect-ratio: 1; overflow: hidden; display: block; background: var(--line); }
+  .grid img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .grid .mini { width: 100%; height: 100%; display: flex; align-items: flex-end; padding: 6px; color: #fff; font-size: 11px; line-height: 1.2; text-align: left; }
+  #scr-map #map { border-radius: 14px; }
+  #scr-map .photo { margin: 0; }
+  #scr-map .photo.real, #scr-map .quote-card { border-radius: 14px; }
+  #tab-chat { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  #chatLog { height: calc(100dvh - 300px); min-height: 280px; }
+  .shop-sec { display: flex; flex-direction: column; gap: 10px; }
+  .shop-sec h2 { font-size: 26px; }
+  .shop-row { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; scrollbar-width: none; }
+  .shop-row::-webkit-scrollbar { display: none; }
+  .item { flex: 0 0 72%; scroll-snap-align: start; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; }
+  .item .art { aspect-ratio: 16 / 10; padding: 14px; color: #fff; display: flex; flex-direction: column; justify-content: flex-end; }
+  .item .art b { font-family: var(--font-display); font-weight: 400; font-size: 26px; line-height: 1.05; }
+  .item .art span { font-size: 12px; opacity: 0.9; }
+  .item .info { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .item .info p { font-size: 13px; color: var(--muted); flex: 1; }
+  .item .buy { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .item .price { font-family: var(--font-data); font-size: 15px; }
+  .tier { border: 1px solid var(--line); border-radius: 16px; padding: 14px; background: var(--surface); display: flex; flex-direction: column; gap: 8px; }
+  .tier.hot { border: 2px solid var(--cobalt); }
+  .tier ul { margin: 0; padding-left: 18px; font-size: 14px; }
+  .tier .row { justify-content: space-between; }
+  .scarce { font-size: 12px; font-weight: 700; color: var(--tram-ink); background: var(--tram); border-radius: 999px; padding: 2px 8px; align-self: flex-start; }
+  .sheet-back { position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,0.45); display: flex; align-items: flex-end; justify-content: center; }
+  .sheet-back[hidden] { display: none; }
+  .sheet { width: min(560px, 100%); background: var(--surface); border-radius: 20px 20px 0 0; padding: 20px 16px calc(20px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 12px; }
+  .toast { position: fixed; z-index: 11; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); border-radius: 999px; padding: 8px 14px; font-size: 14px; max-width: calc(100% - 32px); }
+  .toast[hidden] { display: none; }
   @media (prefers-reduced-motion: no-preference) {
     .pulse { animation: pulse 1.6s ease-out infinite; transform-origin: center; transform-box: fill-box; }
     @keyframes pulse { 0% { opacity: 0.6; transform: scale(0.6); } 100% { opacity: 0; transform: scale(2.2); } }
@@ -203,82 +303,89 @@
 
   <!-- ===================== GAME ===================== -->
   <section id="game" hidden>
-    <div class="wrap" style="padding:0">
-      <div class="top">
-        <div>
-          <div class="eyebrow">Elsewhere · Lisbon</div>
-          <div class="who"><span id="headAvatar"></span><h1 id="cloneName">Clone</h1></div>
-        </div>
-        <div class="clock">
-          <span class="muted small" id="dayLabel">Day 1</span>
-          <b id="clockTime">08:00</b>
-          <span class="muted small" id="speedLabel">3× real time</span>
-        </div>
-      </div>
+    <header class="appbar">
+      <span class="brand">elsewhere</span>
+      <span class="appbar-r"><span class="muted small" id="dayLabel">Day 1</span><b class="mono" id="clockTime">08:00</b><span class="pill mono" id="money">€0</span></span>
+    </header>
 
-      <div class="stats">
-        <div class="stat"><small>Money</small><b id="money">€0</b></div>
-        <div class="stat"><small>Energy</small><b id="energyText">80</b><div class="meter"><i id="energyBar"></i></div></div>
-        <div class="stat"><small>Mood</small><b id="moodText">Good</b><div class="meter"><i id="moodBar"></i></div></div>
-      </div>
-
-      <div class="card now">
-        <div class="row" style="justify-content:space-between">
-          <h3>Right now</h3>
-          <span class="muted small mono" id="nowUntil"></span>
-        </div>
-        <div id="nowPhoto"></div>
-        <div class="what" id="nowWhat">…</div>
-        <div class="muted small" id="nowWhere"></div>
-        <div class="bar"><i id="nowBar"></i></div>
-      </div>
-
-      <div class="card" id="planCard" aria-live="polite"></div>
-
-      <div class="card" id="photoTest" hidden>
-        <div class="row" style="justify-content:space-between"><h3>Photo test</h3><span class="muted small">swipe →</span></div>
-        <p class="small muted">How its moments will look. This is an invented stand-in; with your selfies it becomes you. These photos show up in the journal and in its messages when it does these things.</p>
-        <div class="strip" id="photoStrip"></div>
-      </div>
-
-      <div class="card" style="padding:10px; gap:8px">
-        <span class="away" id="awayBadge" hidden></span>
-        <svg id="map" viewBox="0 0 1000 760" role="img" aria-label="Map of Lisbon showing where your clone is"></svg>
-        <p class="muted small">Live position on a real map of Lisbon. Neighbourhoods and landmarks are real; cafés, restaurants and bars are invented. Map data © OpenStreetMap contributors.</p>
-      </div>
-
+    <!-- Home: what it is doing now, today's plan, and its moments -->
+    <div class="screen" id="scr-home">
+      <button class="now-strip" type="button" data-go="map" aria-label="Where it is now">
+        <span class="ring" id="headAvatar"></span>
+        <span class="grow"><span class="what" id="nowWhat">…</span><span class="muted small" id="nowWhere"></span><span class="bar"><i id="nowBar"></i></span></span>
+        <span class="muted small mono" id="nowUntil"></span>
+      </button>
+      <div class="today" id="planCard" aria-live="polite"></div>
       <div class="card question" id="questionCard" hidden>
         <h3 id="questionLabel">Your clone asks</h3>
         <p class="ask" id="questionText"></p>
         <div class="q-options" id="questionOptions"></div>
         <p class="muted small" id="questionDeadline"></p>
       </div>
-
-      <div class="tabs" role="tablist">
-        <button role="tab" aria-selected="true" data-tab="log" type="button">Journal</button>
-        <button role="tab" aria-selected="false" data-tab="chat" type="button">Messages<span class="badge" id="chatBadge" hidden></span></button>
-        <button role="tab" aria-selected="false" data-tab="bucket" type="button">Bucket list</button>
-        <button role="tab" aria-selected="false" data-tab="me" type="button">Personality</button>
+      <div id="feed"></div>
+      <div class="card" id="photoTest" hidden>
+        <div class="row" style="justify-content:space-between"><h3>Preview</h3><span class="muted small">swipe →</span></div>
+        <p class="small muted">How its moments will look. An invented stand-in for now; with your selfies it becomes you.</p>
+        <div class="strip" id="photoStrip"></div>
       </div>
+    </div>
 
-      <div id="tab-log"></div>
-      <div id="tab-chat" class="card chat" hidden>
+    <!-- Map: where it is right now -->
+    <div class="screen" id="scr-map" hidden>
+      <span class="away" id="awayBadge" hidden></span>
+      <svg id="map" viewBox="0 0 1000 760" role="img" aria-label="Map of Lisbon showing where your clone is"></svg>
+      <div id="nowPhoto"></div>
+      <p class="muted small">Live position on a real map of Lisbon. Neighbourhoods and landmarks are real; cafés, restaurants and bars are invented. Map data © OpenStreetMap contributors.</p>
+    </div>
+
+    <!-- Shop: a test of what people would buy. Nothing is charged. -->
+    <div class="screen" id="scr-shop" hidden><div id="shop"></div></div>
+
+    <!-- Messages -->
+    <div class="screen" id="scr-chat" hidden>
+      <div id="tab-chat" class="chat">
         <div class="chat-head"><span id="chatAvatar"></span><div class="grow"><b id="chatName">Your clone</b><span class="muted small" id="chatStatus"></span></div></div>
         <div id="chatLog" aria-live="polite"></div>
         <form class="chat-form" id="chatForm"><input id="chatIn" type="text" maxlength="500" autocomplete="off" aria-label="Message"><button class="btn small" id="chatSend" type="submit">Send</button></form>
       </div>
+    </div>
+
+    <!-- Profile: who it is, its grid, diary, bucket list and settings -->
+    <div class="screen" id="scr-me" hidden>
+      <div class="profile">
+        <span class="ring big" id="profileAvatar"></span>
+        <div class="grow">
+          <h1 id="cloneName">Clone</h1>
+          <p class="muted small" id="profileLine"></p>
+          <div class="counts" id="profileCounts"></div>
+        </div>
+      </div>
+      <p class="small" id="profileBio"></p>
+      <div class="stats">
+        <div class="stat"><small>Money</small><b id="money2">€0</b></div>
+        <div class="stat"><small>Energy</small><b id="energyText">80</b><div class="meter"><i id="energyBar"></i></div></div>
+        <div class="stat"><small>Mood</small><b id="moodText">Good</b><div class="meter"><i id="moodBar"></i></div></div>
+      </div>
+      <div class="seg" role="tablist">
+        <button role="tab" type="button" data-sub="grid" aria-selected="true">Moments</button>
+        <button role="tab" type="button" data-sub="log" aria-selected="false">Diary</button>
+        <button role="tab" type="button" data-sub="bucket" aria-selected="false">Bucket list</button>
+        <button role="tab" type="button" data-sub="me" aria-selected="false">Personality</button>
+      </div>
+      <div id="tab-grid" class="grid"></div>
+      <div id="tab-log" hidden></div>
       <div id="tab-bucket" class="card bucket" hidden></div>
       <div id="tab-me" class="card" hidden></div>
-
       <footer>
-        <div class="row" style="flex-wrap:wrap; gap:8px">
-          <span>Test speed:</span>
-          <div class="chips" id="speedChips"></div>
-        </div>
-        <p id="saveNote"></p>
+        <div class="row" style="flex-wrap:wrap; gap:8px"><span>Test speed:</span><div class="chips" id="speedChips"></div></div>
+        <p><span id="speedLabel"></span>. <span id="saveNote"></span></p>
         <div><button class="link" id="resetBtn" type="button">Start over with a new clone</button></div>
       </footer>
     </div>
+
+    <nav class="bottomnav" aria-label="Sections"><button type="button" data-go="home" aria-label="Home" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z"/></svg><span>Home</span></button><button type="button" data-go="map" aria-label="Map" aria-current="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Map</span></button><button type="button" data-go="shop" aria-label="Shop" aria-current="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span>Shop</span></button><button type="button" data-go="chat" aria-label="Messages" aria-current="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Messages</span><i class="badge" id="chatBadge" hidden></i></button><button type="button" data-go="me" aria-label="Profile" aria-current="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>Profile</span></button></nav>
+    <div class="sheet-back" id="sheet" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><div id="sheetBody"></div></div></div>
+    <div class="toast" id="toast" hidden></div>
   </section>
 
   <section id="loading" class="card"><p class="muted">Opening your clone's journal…</p></section>
@@ -1038,31 +1145,26 @@ Reply with only JSON in this shape:
     const p = c.plans?.[d];
     const todays = c.events.filter((e) => dayOf(e.t) === d && e.t <= t && e.slot);
     const reached = Math.max(-1, ...todays.map((e) => PLAN_SLOTS.indexOf(e.slot)));
+    const curSlot = currentEvent(c, t)?.slot;
     const covered = new Set(todays.flatMap((e) => ACT[e.act]?.spans?.slice(1) || []));
-    let html = `<div class="row" style="justify-content:space-between"><h3>Today's plan</h3><span class="muted small">Day ${d}</span></div>`;
-    if (p) {
-      if (p.intro) html += `<p class="voice">${esc(p.intro)}</p>`;
-      html += '<ol class="plan">' + PLAN_SLOTS.map((s, i) => {
-        const id = p.slots[s];
-        const did = todays.find((e) => e.slot === s);
-        if (did) {
-          const changed = id && id !== 'free' && did.act !== id;
-          return `<li class="did"><span>${SLOT_NAME[s]}</span><span>✓ ${esc(actLabel(did.act))}${changed ? ' <em class="muted">· changed plans</em>' : ''}</span></li>`;
-        }
-        if (covered.has(s)) return '';
-        if (!id || id === 'free') return i > reached ? `<li><span>${SLOT_NAME[s]}</span><span class="muted">${actLabel('free')}</span></li>` : '';
-        return `<li class="${i < reached ? 'skip' : ''}"><span>${SLOT_NAME[s]}</span><span>${esc(actLabel(id))}${p.asked === s ? ' <em class="muted">· you asked</em>' : ''}</span></li>`;
-      }).join('') + '</ol>';
-    } else {
-      html += `<p class="muted small">No plan for today, so it follows its instincts.</p>`;
-    }
+    let html = '';
+    if (p?.intro) html += `<p class="voice">${esc(p.intro)}</p>`;
+    const chips = PLAN_SLOTS.map((s, i) => {
+      if (covered.has(s)) return '';
+      const did = todays.find((e) => e.slot === s);
+      const id = p?.slots?.[s];
+      if (did) return `<span class="slot did ${s === curSlot ? 'now' : ''}"><b>${SLOT_NAME[s]}</b>✓ ${esc(actLabel(did.act))}</span>`;
+      if (!id || id === 'free') return i > reached && p ? `<span class="slot"><b>${SLOT_NAME[s]}</b>${actLabel('free')}</span>` : '';
+      return `<span class="slot ${i < reached ? 'skip' : ''}"><b>${SLOT_NAME[s]}</b>${esc(actLabel(id))}${p.asked === s ? ' · you asked' : ''}</span>`;
+    }).join('');
+    if (chips) html += `<div class="slots" aria-label="Today's plan">${chips}</div>`;
     if (checkIn.busy) html += `<p class="muted small">${esc(c.name)}'s clone is thinking about the next days…</p>`;
-    else if (!sample) html += `<p class="muted small">AI planning is off on this page, so it follows simple instincts.</p>`;
-    else if (checkIn.error) html += `<p class="small" style="color:var(--bad)">${esc(checkIn.error)}</p><button class="btn ghost small" type="button" data-checkin="1">Try again</button>`;
-    else if (needsCheckIn(c)) html += `<button class="btn small" type="button" data-checkin="1">Check in with ${esc(c.name)}'s clone</button><p class="muted small">It plans the next days and writes up what happened. Uses Claude.</p>`;
-    else if (p) html += `<p class="muted small">Planned by the clone itself (AI). It may change its mind if money or energy run low.</p>`;
+    else if (sample && checkIn.error) html += `<p class="small" style="color:var(--bad)">${esc(checkIn.error)} <button class="link" type="button" data-checkin="1">Try again</button></p>`;
+    else if (sample && needsCheckIn(c)) html += `<button class="btn small" type="button" data-checkin="1">Check in with ${esc(c.name)}'s clone</button>`;
     $('#planCard').innerHTML = html;
+    $('#planCard').hidden = !html;
   }
+
 
   // =====================================================================
   // Chat with your clone. It lives on its own clock: busy at the fado show,
@@ -1206,7 +1308,7 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
       if (d !== lastDay) { html += `<div class="chat-day">Day ${d}</div>`; lastDay = d; }
       if (m.from === 'sys') { html += `<div class="chat-sys">${esc(m.text)}</div>`; continue; }
       const e = m.ev && c.events.find((x) => x.id === m.ev);
-      const body = e ? `${scenePhoto(e, c.avatar)}<div>${esc(e.line || m.text)}</div>` : esc(m.text);
+      const body = e ? `${PHOTOS[e.act] ? realPhoto(e.act, e.title) : ''}<div>${esc(e.line || m.text)}</div>` : esc(m.text);
       html += `<div class="msg ${m.from === 'you' ? 'me' : 'them'}">${body}<time>${hhmm(m.t)}</time></div>`;
     }
     if (typing === 'typing' || typing === 'sending') html += `<div class="msg them typing" aria-label="typing"><i></i><i></i><i></i></div>`;
@@ -1237,10 +1339,148 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
     fado: 'Night: fado in a candle-lit tavern in Alfama',
   };
   const realPhoto = (id, alt) => `<figure class="photo real"><img src="${PHOTOS[id]}" alt="${esc(alt || PHOTO_LINES[id] || '')}" loading="lazy"><figcaption>AI clone · test stand-in</figcaption></figure>`;
-  function renderPhotoTest() {
+  function renderPhotoTest(c, t) {
     const ids = Object.keys(PHOTOS);
-    $('#photoTest').hidden = !ids.length;
+    $('#photoTest').hidden = !ids.length || c.events.some((e) => e.t <= t && PHOTOS[e.act]);
     $('#photoStrip').innerHTML = ids.map((id) => `<div class="shot">${realPhoto(id)}<p class="small">${esc(PHOTO_LINES[id] || '')}</p></div>`).join('');
+  }
+
+  // =====================================================================
+  // Feed: its moments, Instagram-simple. Only highlights become posts;
+  // everything else stays in the diary on its profile.
+  // =====================================================================
+  const CAT_BG = {
+    food: ['#c4613c', '#7a2f17'], culture: ['#1f4fa3', '#14213d'], nightlife: ['#4b2c7a', '#16133a'], nature: ['#2e7d5b', '#123d2c'],
+    adventure: ['#0f6a8b', '#0b2f45'], social: ['#a03a5a', '#4a1a2b'], sight: ['#b5832a', '#5a3b0e'], travel: ['#1f4fa3', '#0d1b3a'],
+    rest: ['#5c6b82', '#26324a'], shopping: ['#8a4f9e', '#3d1e47'], work: ['#5c6b82', '#26324a'], note: ['#5c6b82', '#26324a'],
+  };
+  const catBg = (cat) => { const [a, b] = CAT_BG[cat] || CAT_BG.travel; return `linear-gradient(160deg, ${a}, ${b})`; };
+  const ICON = {
+    heart: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-9.3-9.2C1.4 7.4 3.6 4 7 4c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.4 0 5.6 3.4 4.3 6.8C19.5 15.4 12 20 12 20z"/></svg>',
+    reply: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+    share: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg>',
+    card: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+  };
+  let feedDays = 2;
+
+  const isPost = (e) => !e.sleep && e.cat !== 'note' && (e.hl || PHOTOS[e.act] || e.act === 'meet' || e.ticked || e.act === 'arrive');
+  function postMedia(c, e) {
+    if (PHOTOS[e.act]) return realPhoto(e.act, e.title);
+    return `<div class="quote-card" style="background:${catBg(e.cat)}"><span>${esc(AREAS[e.area].name)} · day ${dayOf(e.t)}</span><p>${esc(e.line || e.title)}</p><span>${esc(actLabel(e.act))}</span></div>`;
+  }
+  function renderFeed(c, t) {
+    const posts = c.events.filter((e) => e.t <= t && isPost(e) && dayOf(e.t) > dayOf(t) - feedDays).reverse();
+    const older = c.events.some((e) => e.t <= t && isPost(e) && dayOf(e.t) <= dayOf(t) - feedDays);
+    const who = `${esc(c.name.toLowerCase())}.clone`;
+    const mini = avatarSvg(c.avatar, '');
+    $('#feed').innerHTML = posts.map((e) => {
+      const caption = PHOTOS[e.act] || !e.line ? (e.line || e.title) : e.title;
+      const facts = [e.cost ? `−${euro(e.cost)}` : '', e.earn ? `+${euro(e.earn)}` : '', e.reason === 'you' ? 'you picked this' : e.reason === 'plan' ? 'its own plan' : ''].filter(Boolean).join(' · ');
+      return `<article class="post" id="post-${e.id}">
+        <div class="post-head"><span class="ring">${mini}</span><div class="grow"><b>${who}</b><span class="muted">${esc(AREAS[e.area].name)} · day ${dayOf(e.t)}, ${hhmm(e.t)}</span></div></div>
+        ${postMedia(c, e)}
+        <div class="post-actions">
+          <button class="icon-btn" type="button" data-react="love" data-id="${e.id}" aria-pressed="${e.react === 'love'}" aria-label="Love this">${ICON.heart}</button>
+          <button class="icon-btn" type="button" data-reply="${e.id}" aria-label="Reply in messages">${ICON.reply}</button>
+          <button class="icon-btn" type="button" data-share="${e.id}" aria-label="Share">${ICON.share}</button>
+          <span class="grow"></span>
+          ${sample ? `<button class="icon-btn" type="button" data-post="${e.id}" aria-label="Postcard">${ICON.card}</button>` : ''}
+        </div>
+        <div class="post-body">
+          <p class="cap"><b>${who}</b>${esc(caption)}</p>
+          ${e.ticked ? `<p class="small" style="color:var(--good);font-weight:700">✓ Bucket list: ${esc(e.ticked)}</p>` : ''}
+          ${e.story ? `<div class="story">${esc(e.story)}</div>` : ''}
+          ${facts ? `<p class="meta">${esc(facts)}</p>` : ''}
+        </div>
+        ${e.postcard && openPostcards.has(e.id) ? `<div class="postcard">${esc(e.postcard)}</div>` : `<div class="postcard" data-pc="${e.id}" hidden></div>`}
+      </article>`;
+    }).join('') + (older ? `<button class="btn ghost small more" type="button" data-more="1">Show earlier days</button>` : '') +
+      (posts.length ? '' : `<p class="muted small" style="text-align:center">Its best moments show up here. The first one is on its way.</p>`);
+  }
+
+  function renderGrid(c, t) {
+    const posts = c.events.filter((e) => e.t <= t && isPost(e)).reverse();
+    $('#tab-grid').innerHTML = posts.map((e) => `<button type="button" data-open="${e.id}" aria-label="${esc(e.title)}">${PHOTOS[e.act] ? `<img src="${PHOTOS[e.act]}" alt="">` : `<span class="mini" style="background:${catBg(e.cat)}">${esc(actLabel(e.act))}</span>`}</button>`).join('')
+      || '<p class="muted small" style="grid-column:1/-1">No moments yet.</p>';
+  }
+
+  function renderProfile(c, t) {
+    const words = Object.entries(c.traits).map(([k, v]) => v > 0.62 ? TRAITS[k][1] : v < 0.38 ? TRAITS[k][0] : null).filter(Boolean);
+    const posts = c.events.filter((e) => e.t <= t && isPost(e)).length;
+    $('#profileLine').textContent = `${c.name.toLowerCase()}.clone · Lisbon, day ${dayOf(t)}`;
+    $('#profileCounts').innerHTML = `<span><b>${posts}</b>moments</span><span><b>${Object.keys(c.friends).length}</b>clones met</span><span><b>${c.bucket.filter((b) => b.done).length}/${c.bucket.length}</b>bucket list</span>`;
+    $('#profileBio').textContent = `${words.join(' · ') || 'Balanced'}. AI clone of ${c.name}, living its own life.`;
+  }
+
+  // =====================================================================
+  // Shop: a "fake door" test. Every buy button counts interest; nothing is charged.
+  // =====================================================================
+  const SHOP = {
+    tiers: [
+      { id: 'explorer', name: 'Explorer', price: '€6.99 / month', feats: ['Chat with your clone', '3 photo moments a day', 'Travel to every normal destination'] },
+      { id: 'jetset', name: 'Jet-set', price: '€14.99 / month', hot: true, feats: ['Everything in Explorer', 'Voice notes in your own voice', 'Video moments and a weekly reel', 'Early access to drops', 'Two trips at once'] },
+    ],
+    drops: [
+      { id: 'antarctica', name: 'Antarctic expedition', sub: 'Only 500 clones · 214 left', price: '€9.99', bg: ['#5d8fb8', '#13314f'], text: 'Ten days on an ice ship. Penguins, icebergs, and photos almost nobody else will ever have.' },
+      { id: 'lighthouse', name: 'A night in a lighthouse', sub: 'This weekend only', price: '€4.99', bg: ['#e0603a', '#3b1a3f'], text: 'A storm, a spiral staircase and the keeper\'s stories.' },
+      { id: 'festival', name: 'Backstage at a summer festival', sub: '300 passes · 41 left', price: '€7.99', bg: ['#8a4f9e', '#1d1240'], text: 'Side of stage, crowd surfing optional.' },
+      { id: 'moon', name: 'The moon', sub: 'Yes, really · 100 seats', price: '€19.99', bg: ['#3a3f55', '#05060d'], text: 'Earthrise selfie included.' },
+    ],
+    trips: [
+      { id: 'tokyo', name: 'Tokyo', sub: 'Neon nights, ramen at 2am', price: '€3.99', bg: ['#d1356b', '#2a1036'] },
+      { id: 'bali', name: 'Bali', sub: 'Rice terraces and surf', price: '€3.99', bg: ['#2e9d6e', '#0e3b2c'] },
+      { id: 'iceland', name: 'Iceland', sub: 'Northern lights, hot springs', price: '€3.99', bg: ['#3a7bb8', '#0c1e3a'] },
+      { id: 'amalfi', name: 'Amalfi coast', sub: 'Lemons, boats, cliffs', price: '€3.99', bg: ['#e8a33a', '#9a3b1c'] },
+      { id: 'nyc', name: 'New York', sub: 'Rooftops and bagels', price: '€3.99', bg: ['#5c6b82', '#141b2b'] },
+    ],
+    extras: [
+      { id: 'pocket200', name: 'Pocket money', sub: '€200 for your clone', price: '€0.99', bg: ['#23824f', '#0d3a22'], text: 'For when it texts you that it\'s broke.' },
+      { id: 'postcard', name: 'A real postcard', sub: 'Printed and mailed to you', price: '€3.99', bg: ['#c4613c', '#5a2410'], text: 'Its best moment of the week, on your fridge.' },
+    ],
+  };
+  const SHOP_ALL = Object.fromEntries([...SHOP.tiers, ...SHOP.drops, ...SHOP.trips, ...SHOP.extras].map((x) => [x.id, x]));
+  function item(x) {
+    return `<div class="item"><div class="art" style="background:linear-gradient(160deg, ${x.bg[0]}, ${x.bg[1]})"><b>${esc(x.name)}</b><span>${esc(x.sub)}</span></div>
+      <div class="info">${x.text ? `<p>${esc(x.text)}</p>` : ''}<div class="buy"><span class="price">${x.price}</span><button class="btn small" type="button" data-buy="${x.id}">Buy</button></div></div></div>`;
+  }
+  function renderShop(c) {
+    $('#shop').innerHTML = `
+      <div class="shop-sec"><h2>Drops</h2><p class="muted small">Places other clones can't go. When they're gone, they're gone.</p><div class="shop-row">${SHOP.drops.map(item).join('')}</div></div>
+      <div class="shop-sec"><h2>Plane tickets</h2><p class="muted small">Send ${esc(c.name)}'s clone somewhere new.</p><div class="shop-row">${SHOP.trips.map(item).join('')}</div></div>
+      <div class="shop-sec"><h2>Membership</h2>${SHOP.tiers.map((x) => `<div class="tier ${x.hot ? 'hot' : ''}"><div class="row"><b>${x.name}</b><span class="price mono">${x.price}</span></div><ul>${x.feats.map((f) => `<li>${esc(f)}</li>`).join('')}</ul><button class="btn ${x.hot ? '' : 'ghost'} small" type="button" data-buy="${x.id}">Choose ${x.name}</button></div>`).join('')}
+        <p class="muted small">Free: one city, one photo moment a day, a few messages.</p></div>
+      <div class="shop-sec"><h2>Extras</h2><div class="shop-row">${SHOP.extras.map(item).join('')}</div></div>
+      <p class="muted small">Test shop: nothing is charged. Taps tell us what people would buy.</p>`;
+  }
+  function openSheet(html) { $('#sheetBody').innerHTML = html; $('#sheet').hidden = false; $('#sheet').querySelector('button')?.focus(); }
+  function closeSheet() { $('#sheet').hidden = true; }
+  let toastTimer = null;
+  function toast(text) { $('#toast').textContent = text; $('#toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('#toast').hidden = true; }, 2600); }
+  function buy(c, id) {
+    const x = SHOP_ALL[id]; if (!x) return;
+    c.shopTaps ||= {};
+    c.shopTaps[id] = (c.shopTaps[id] || 0) + 1;
+    markDirty(); flush();
+    openSheet(`<h2>${esc(x.name)}</h2><p>Coming soon. You'd be one of the first, and we've noted that you want this.</p>
+      <p class="muted small">This is a test shop: nothing was charged. We count which buttons people tap to learn what's worth building.</p>
+      <button class="btn" type="button" data-close="1">Got it</button>`);
+  }
+
+  async function shareMoment(c, e) {
+    const text = `My AI clone in Lisbon: "${e.line || e.title}" (Elsewhere, AI-generated)`;
+    try {
+      if (navigator.share) {
+        const data = { title: 'Elsewhere', text };
+        if (PHOTOS[e.act] && navigator.canShare) {
+          const blob = await (await fetch(PHOTOS[e.act])).blob();
+          const file = new File([blob], `elsewhere-${e.act}.jpg`, { type: 'image/jpeg' });
+          if (navigator.canShare({ files: [file] })) data.files = [file];
+        }
+        await navigator.share(data);
+        return;
+      }
+    } catch (err) { if (err?.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(text); toast('Caption copied. Paste it anywhere.'); } catch (err) { toast('Sharing is not available here.'); }
   }
 
   // =====================================================================
@@ -1395,7 +1635,15 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
   // =====================================================================
   // Rendering
   // =====================================================================
-  let lastLogKey = '', lastPlanKey = '', tab = 'log', openPostcards = new Set();
+  let lastLogKey = '', lastPlanKey = '', tab = 'home', sub = 'grid', openPostcards = new Set();
+  function go(name) {
+    tab = name;
+    for (const k of ['home', 'map', 'shop', 'chat', 'me']) $('#scr-' + k).hidden = k !== name;
+    document.querySelectorAll('[data-go]').forEach((x) => { if (x.closest('.bottomnav')) x.setAttribute('aria-current', x.dataset.go === name ? 'page' : 'false'); });
+    if (name === 'chat') renderChat(clone, true);
+    if (name === 'shop') renderShop(clone);
+    window.scrollTo(0, 0);
+  }
 
   function currentEvent(c, t) {
     let cur = null;
@@ -1410,11 +1658,13 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
 
     $('#cloneName').textContent = c.name;
     if (!$('#headAvatar').firstChild) $('#headAvatar').innerHTML = avatarSvg(c.avatar, `${c.name}'s clone`);
-    $('#dayLabel').textContent = `Day ${dayOf(t)} · Lisbon`;
+    if (!$('#profileAvatar').firstChild) $('#profileAvatar').innerHTML = avatarSvg(c.avatar, `${c.name}'s clone`);
+    $('#dayLabel').textContent = `Day ${dayOf(t)}`;
     $('#clockTime').textContent = hhmm(t);
     $('#speedLabel').textContent = `${c.speed}× real time`;
     $('#money').textContent = euro(c.money);
     $('#money').style.color = c.money < 60 ? 'var(--bad)' : '';
+    $('#money2').textContent = euro(c.money);
     $('#energyText').textContent = Math.round(c.energy);
     $('#energyBar').style.width = c.energy + '%';
     $('#moodText').textContent = moodWord(c.mood);
@@ -1425,11 +1675,11 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
     if (cur) {
       const pos = positionAt(c, t);
       $('#nowWhat').textContent = pos.moving ? `On the way to ${AREAS[cur.area].name}` : cur.sleep ? cur.title.replace('Night at', 'Asleep at') : cur.title;
-      $('#nowWhere').textContent = `${AREAS[cur.area].name}${cur.cost ? ' · ' + euro(cur.cost) : ''}${cur.earn ? ' · earning ' + euro(cur.earn) : ''}`;
-      if ($('#nowPhoto').dataset.id !== cur.id) { $('#nowPhoto').dataset.id = cur.id; $('#nowPhoto').innerHTML = scenePhoto(cur, c.avatar); }
+      $('#nowWhere').textContent = `${AREAS[cur.area].name} · until ${hhmm(cur.end)}`;
+      if ($('#nowPhoto').dataset.id !== cur.id) { $('#nowPhoto').dataset.id = cur.id; $('#nowPhoto').innerHTML = postMedia(c, cur); }
       const pct = clamp((t - cur.t) / (cur.end - cur.t), 0, 1);
       $('#nowBar').style.width = (pct * 100).toFixed(1) + '%';
-      $('#nowUntil').textContent = `until ${hhmm(cur.end)} · ${realDur(cur.end - t, c.speed)} real`;
+      $('#nowUntil').textContent = realDur(cur.end - t, c.speed);
       // Map
       const ar = AREAS[cur.area];
       const off = ar.lat > B.maxLat || ar.lat < B.minLat || ar.lng > B.maxLng || ar.lng < B.minLng;
@@ -1464,9 +1714,13 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
     const pk = planKey(c, t);
     if (force || pk !== lastPlanKey) { lastPlanKey = pk; renderPlan(c, t); }
 
-    // Log, bucket, personality
-    const key = c.events.filter((e) => e.t <= t).length + ':' + c.events.map((e) => (e.react || '') + (e.postcard ? 'p' : '') + (e.line ? 'l' : '') + (e.story ? 's' : '')).join('') + ':' + tab + ':' + Object.keys(c.diaries).length;
-    if (force || key !== lastLogKey) { lastLogKey = key; renderLog(c, t); renderBucket(c); renderMe(c); }
+    // Feed, profile, diary, bucket, personality
+    const key = c.events.filter((e) => e.t <= t).length + ':' + c.events.map((e) => (e.react || '') + (e.postcard ? 'p' : '') + (e.line ? 'l' : '') + (e.story ? 's' : '')).join('') + ':' + feedDays + ':' + Object.keys(c.diaries).length + ':' + !!sample;
+    if (force || key !== lastLogKey) {
+      lastLogKey = key;
+      renderFeed(c, t); renderPhotoTest(c, t); renderGrid(c, t); renderProfile(c, t);
+      renderLog(c, t); renderBucket(c); renderMe(c);
+    }
   }
 
   function renderLog(c, t) {
@@ -1492,13 +1746,13 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
         if (!e.sleep && e.cat !== 'note') meta.push(`<span>${moodWord(e.mood)}</span>`);
         const why = e.reason === 'you' ? '<div class="note">You picked this one.</div>' : e.reason === 'gut' ? '<div class="note">No answer from you, so it followed its gut.</div>' : e.reason === 'work' ? '<div class="note">Money ran low, so it took a job.</div>' : '';
         const tick = e.ticked ? `<div class="note" style="color:var(--good);font-style:normal;font-weight:700">✓ Bucket list: ${esc(e.ticked)}</div>` : '';
-        const canPost = sample && e.hl && !e.sleep;
+        const canPost = false;
         const acts = (e.sleep || e.cat === 'note') ? '' : `<div class="acts">
             <button class="react" type="button" data-react="love" data-id="${e.id}" aria-pressed="${e.react === 'love'}">Love this</button>
             <button class="react" type="button" data-react="meh" data-id="${e.id}" aria-pressed="${e.react === 'meh'}">Meh</button>
             ${canPost ? `<button class="react" type="button" data-post="${e.id}">${e.postcard ? 'Postcard' : 'Read postcard'}</button>` : ''}
           </div>`;
-        const photo = (e.hl || e.act === 'meet') && !e.sleep ? scenePhoto(e, c.avatar) : '';
+        const photo = '';
         const pc = e.postcard && openPostcards.has(e.id) ? `<div class="postcard">${esc(e.postcard)}</div>` : `<div class="postcard" data-pc="${e.id}" hidden></div>`;
         const voice = e.line ? `<div class="voice">“${esc(e.line)}”</div>` : '';
         const story = e.story ? `<div class="story">${esc(e.story)}</div>` : '';
@@ -1623,14 +1877,14 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
   // =====================================================================
   function startGame() {
     $('#setup').hidden = true; $('#loading').hidden = true; $('#game').hidden = false;
-    $('#headAvatar').innerHTML = '';
+    $('#headAvatar').innerHTML = ''; $('#profileAvatar').innerHTML = '';
+    go('home');
     drawMapBase();
     $('#speedChips').innerHTML = SPEEDS.map(([v, l]) => `<button class="chip" type="button" data-speed="${v}" aria-pressed="${clone.speed === v}">${l}</button>`).join('');
     $('#saveNote').textContent = docRef ? 'Saved to your account: your clone keeps living while this page is closed.'
       : 'Saved in this browser: your clone keeps living while this page is closed.';
     clone.plans ||= {};
     clone.chat ||= [];
-    renderPhotoTest();
     $('#chatAvatar').innerHTML = avatarSvg(clone.avatar, `${clone.name}'s clone`);
     $('#chatName').textContent = `${clone.name}'s clone`;
     render(true);
@@ -1657,14 +1911,34 @@ Reply with only JSON: {"messages": ["..."], "remember": "one short new fact abou
       setSpeed(clone, Number(b.dataset.speed));
       document.querySelectorAll('[data-speed]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.speed === b.dataset.speed)));
       render(true);
-    } else if (b.dataset.tab) {
-      tab = b.dataset.tab;
-      document.querySelectorAll('[data-tab]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
-      $('#tab-log').hidden = tab !== 'log'; $('#tab-bucket').hidden = tab !== 'bucket'; $('#tab-me').hidden = tab !== 'me'; $('#tab-chat').hidden = tab !== 'chat';
-      if (tab === 'chat') renderChat(clone, true);
+    } else if (b.dataset.go) {
+      go(b.dataset.go);
+    } else if (b.dataset.sub) {
+      sub = b.dataset.sub;
+      document.querySelectorAll('[data-sub]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+      for (const k of ['grid', 'log', 'bucket', 'me']) $('#tab-' + k).hidden = sub !== k;
+    } else if (b.dataset.more) {
+      feedDays += 3; render(true);
+    } else if (b.dataset.share) {
+      const e = clone.events.find((x) => x.id === b.dataset.share);
+      if (e) shareMoment(clone, e);
+    } else if (b.dataset.reply) {
+      const e = clone.events.find((x) => x.id === b.dataset.reply);
+      go('chat');
+      if (e) { $('#chatIn').value = `About "${actLabel(e.act).toLowerCase()}": `; $('#chatIn').focus(); }
+    } else if (b.dataset.open) {
+      go('home');
+      const e = clone.events.find((x) => x.id === b.dataset.open);
+      if (e) { feedDays = Math.max(feedDays, dayOf(cloneNow(clone)) - dayOf(e.t) + 1); render(true); document.getElementById('post-' + e.id)?.scrollIntoView({ block: 'start' }); }
+    } else if (b.dataset.buy) {
+      buy(clone, b.dataset.buy);
+    } else if (b.dataset.close) {
+      closeSheet();
     }
   });
 
+  $('#sheet').addEventListener('click', (ev) => { if (ev.target === $('#sheet')) closeSheet(); });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && !$('#sheet').hidden) closeSheet(); });
   $('#chatForm').addEventListener('submit', (ev) => {
     ev.preventDefault();
     if (!clone || chatSending.busy) return;
