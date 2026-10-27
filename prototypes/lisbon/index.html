@@ -1,0 +1,1246 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"></head>
+<body>
+<title>Elsewhere Lisbon Test</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+  /* Layout: one phone-width column. A live "now" strip and a hand-drawn Lisbon map up top,
+     then the clone's question, then its journal. Palette: azulejo cobalt on tile white,
+     with Tram 28 yellow as the single warm accent. */
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --ink: #14213d;
+    --muted: #5c6b82;
+    --line: #dfe4ec;
+    --cobalt: #1f4fa3;
+    --cobalt-soft: #e7eefb;
+    --tram: #f2b705;
+    --tram-ink: #3d2e00;
+    --good: #23824f;
+    --bad: #c2412d;
+    --water: #cfe0f5;
+    --land: #f1efe8;
+    --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
+    --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-data: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1424; --surface: #151f35; --ink: #e8edf7; --muted: #9aa8c2; --line: #263452;
+      --cobalt: #8fb2ff; --cobalt-soft: #1c2a4a; --tram: #f2b705; --tram-ink: #2a1f00;
+      --good: #5fd08f; --bad: #ff8a72; --water: #1b3358; --land: #1a2338; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1424; --surface: #151f35; --ink: #e8edf7; --muted: #9aa8c2; --line: #263452;
+    --cobalt: #8fb2ff; --cobalt-soft: #1c2a4a; --tram: #f2b705; --tram-ink: #2a1f00;
+    --good: #5fd08f; --bad: #ff8a72; --water: #1b3358; --land: #1a2338; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+  .wrap {
+    max-width: 560px; margin: 0 auto;
+    padding-block: 18px 48px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  h1, h2, h3 { margin: 0; font-weight: 400; text-wrap: balance; }
+  h1 { font-family: var(--font-display); font-size: 44px; line-height: 1; }
+  h2 { font-family: var(--font-display); font-size: 28px; line-height: 1.1; }
+  h3 { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  p { margin: 0; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .mono { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+  button { font: inherit; cursor: pointer; color: inherit; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 2px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .btn { border: 0; border-radius: 12px; background: var(--cobalt); color: var(--surface); font-weight: 700; padding: 12px 16px; min-height: 46px; }
+  .btn.ghost { background: transparent; color: var(--cobalt); border: 1px solid var(--cobalt); }
+  .btn.small { min-height: 34px; padding: 6px 12px; font-size: 13px; }
+  .btn:disabled { opacity: 0.45; cursor: default; }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .grow { flex: 1; min-width: 0; }
+  [hidden] { display: none !important; }
+
+  /* ---------- setup ---------- */
+  .eyebrow { font-family: var(--font-data); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cobalt); }
+  .q-options { display: grid; gap: 8px; }
+  .opt { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-height: 48px; }
+  .opt[aria-pressed="true"] { border-color: var(--cobalt); background: var(--cobalt-soft); font-weight: 600; }
+  .progress { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+  .progress i { display: block; height: 100%; background: var(--cobalt); transition: width 0.3s; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 8px 14px; font-size: 14px; }
+  .chip[aria-pressed="true"] { border-color: var(--cobalt); background: var(--cobalt-soft); font-weight: 700; }
+  input[type="text"] { font: inherit; width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+  .traits { display: grid; gap: 8px; }
+  .trait { display: grid; grid-template-columns: 1fr 120px 1fr; gap: 8px; align-items: center; font-size: 13px; }
+  .trait span:last-child { text-align: right; }
+  .trait .bar { height: 6px; border-radius: 3px; background: var(--line); position: relative; }
+  .trait .bar i { position: absolute; top: -3px; width: 12px; height: 12px; border-radius: 50%; background: var(--cobalt); transform: translateX(-6px); }
+
+  /* ---------- game ---------- */
+  .top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+  .clock { text-align: right; }
+  .clock b { font-family: var(--font-data); font-size: 22px; font-weight: 500; display: block; }
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; }
+  .stat small { display: block; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .stat b { font-family: var(--font-data); font-weight: 500; font-size: 17px; }
+  .meter { height: 5px; border-radius: 3px; background: var(--line); margin-top: 4px; overflow: hidden; }
+  .meter i { display: block; height: 100%; background: var(--cobalt); }
+  .now { border-left: 4px solid var(--tram); }
+  .now .what { font-size: 18px; font-weight: 700; line-height: 1.3; }
+  .now .bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .now .bar i { display: block; height: 100%; background: var(--tram); }
+  #map { width: 100%; height: auto; display: block; border-radius: 14px; border: 1px solid var(--line); background: var(--water); max-width: 100%; aspect-ratio: 1000 / 760; }
+  .away { font-size: 13px; font-weight: 700; color: var(--tram-ink); background: var(--tram); border-radius: 999px; padding: 4px 10px; align-self: flex-start; }
+  .question { border: 2px solid var(--cobalt); }
+  .question .ask { font-family: var(--font-display); font-size: 24px; line-height: 1.2; }
+  .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); }
+  .tabs button { background: none; border: 0; padding: 10px 12px; font-weight: 700; color: var(--muted); border-bottom: 3px solid transparent; }
+  .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--tram); }
+  .day-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 6px; }
+  .day-head h2 { font-size: 24px; }
+  .entry { display: grid; grid-template-columns: 52px 1fr; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .entry:first-of-type { border-top: 0; }
+  .entry time { font-family: var(--font-data); font-size: 13px; color: var(--muted); padding-top: 2px; }
+  .entry .t { font-weight: 600; }
+  .entry .meta { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .entry .meta .cost { font-family: var(--font-data); }
+  .entry .meta .earn { color: var(--good); font-family: var(--font-data); }
+  .entry.hl .t::before { content: "★ "; color: var(--tram); }
+  .entry .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .react { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 10px; font-size: 13px; }
+  .react[aria-pressed="true"] { border-color: var(--cobalt); background: var(--cobalt-soft); font-weight: 700; }
+  .who { display: flex; align-items: center; gap: 12px; }
+  .who svg { width: 60px; height: 60px; flex: none; }
+  .photo { width: 100%; height: auto; display: block; border-radius: 12px; margin-top: 8px; aspect-ratio: 320 / 200; max-width: 100%; }
+  .now .photo { margin-top: 0; }
+  .av-preview { display: flex; justify-content: center; }
+  .av-preview svg { width: 140px; height: 140px; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+  .swatch { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--line); padding: 0; }
+  .swatch[aria-pressed="true"] { border: 3px solid var(--cobalt); }
+  .postcard {
+    margin-top: 8px; padding: 14px; border-radius: 12px; background: var(--cobalt-soft);
+    font-family: var(--font-display); font-size: 19px; line-height: 1.4; white-space: pre-wrap;
+  }
+  .postcard.wait { font-family: var(--font-body); font-size: 14px; color: var(--muted); }
+  .note { font-size: 13px; color: var(--muted); font-style: italic; }
+  .bucket li { padding: 10px 0; border-top: 1px solid var(--line); list-style: none; display: flex; gap: 10px; }
+  .bucket li:first-child { border-top: 0; }
+  .bucket ul { padding: 0; margin: 0; }
+  .bucket .done { color: var(--good); font-weight: 700; }
+  .friends li { list-style: none; padding: 8px 0; border-top: 1px solid var(--line); }
+  .friends ul { padding: 0; margin: 0; }
+  footer { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 8px; }
+  .link { background: none; border: 0; padding: 0; color: var(--cobalt); text-decoration: underline; font-size: 13px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .pulse { animation: pulse 1.6s ease-out infinite; transform-origin: center; transform-box: fill-box; }
+    @keyframes pulse { 0% { opacity: 0.6; transform: scale(0.6); } 100% { opacity: 0; transform: scale(2.2); } }
+  }
+</style>
+
+<div class="wrap">
+
+  <!-- ===================== SETUP ===================== -->
+  <section id="setup" class="card" hidden>
+    <div class="eyebrow">Elsewhere · Lisbon test</div>
+    <h1 id="setupTitle">Make your clone</h1>
+    <div class="progress"><i id="setupProgress" style="width:0"></i></div>
+    <div id="setupBody"></div>
+  </section>
+
+  <!-- ===================== GAME ===================== -->
+  <section id="game" hidden>
+    <div class="wrap" style="padding:0">
+      <div class="top">
+        <div>
+          <div class="eyebrow">Elsewhere · Lisbon</div>
+          <div class="who"><span id="headAvatar"></span><h1 id="cloneName">Clone</h1></div>
+        </div>
+        <div class="clock">
+          <span class="muted small" id="dayLabel">Day 1</span>
+          <b id="clockTime">08:00</b>
+          <span class="muted small" id="speedLabel">3× real time</span>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><small>Money</small><b id="money">€0</b></div>
+        <div class="stat"><small>Energy</small><b id="energyText">80</b><div class="meter"><i id="energyBar"></i></div></div>
+        <div class="stat"><small>Mood</small><b id="moodText">Good</b><div class="meter"><i id="moodBar"></i></div></div>
+      </div>
+
+      <div class="card now">
+        <div class="row" style="justify-content:space-between">
+          <h3>Right now</h3>
+          <span class="muted small mono" id="nowUntil"></span>
+        </div>
+        <div id="nowPhoto"></div>
+        <div class="what" id="nowWhat">…</div>
+        <div class="muted small" id="nowWhere"></div>
+        <div class="bar"><i id="nowBar"></i></div>
+      </div>
+
+      <div class="card" style="padding:10px; gap:8px">
+        <span class="away" id="awayBadge" hidden></span>
+        <svg id="map" viewBox="0 0 1000 760" role="img" aria-label="Map of Lisbon showing where your clone is"></svg>
+        <p class="muted small">Live position. Neighbourhoods and landmarks are real; cafés, restaurants and bars are invented.</p>
+      </div>
+
+      <div class="card question" id="questionCard" hidden>
+        <h3 id="questionLabel">Your clone asks</h3>
+        <p class="ask" id="questionText"></p>
+        <div class="q-options" id="questionOptions"></div>
+        <p class="muted small" id="questionDeadline"></p>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="log" type="button">Journal</button>
+        <button role="tab" aria-selected="false" data-tab="bucket" type="button">Bucket list</button>
+        <button role="tab" aria-selected="false" data-tab="me" type="button">Personality</button>
+      </div>
+
+      <div id="tab-log"></div>
+      <div id="tab-bucket" class="card bucket" hidden></div>
+      <div id="tab-me" class="card" hidden></div>
+
+      <footer>
+        <div class="row" style="flex-wrap:wrap; gap:8px">
+          <span>Test speed:</span>
+          <div class="chips" id="speedChips"></div>
+        </div>
+        <p id="saveNote"></p>
+        <div><button class="link" id="resetBtn" type="button">Start over with a new clone</button></div>
+      </footer>
+    </div>
+  </section>
+
+  <section id="loading" class="card"><p class="muted">Opening your clone's journal…</p></section>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // =====================================================================
+  // Helpers
+  // =====================================================================
+  const $ = (s) => document.querySelector(s);
+  const H = 3600e3, DAY = 24 * H;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const euro = (n) => '€' + Math.round(n).toLocaleString('en');
+  const hhmm = (t) => {
+    const m = Math.floor((((t % DAY) + DAY) % DAY) / 60000);
+    return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  };
+  const dayOf = (t) => Math.floor(t / DAY) + 1;
+  const hourOf = (t) => ((t % DAY) + DAY) % DAY / H;
+  const realDur = (cloneMs, speed) => {
+    const s = Math.max(0, Math.round(cloneMs / speed / 1000));
+    if (s < 60) return s + 's';
+    if (s < 3600) return Math.round(s / 60) + ' min';
+    return (s / 3600).toFixed(1).replace('.0', '') + ' h';
+  };
+
+  // =====================================================================
+  // Lisbon: real neighbourhoods and landmarks, invented venues
+  // =====================================================================
+  const AREAS = {
+    airport: { name: 'Airport', lat: 38.7742, lng: -9.1342 },
+    alfama: { name: 'Alfama', lat: 38.7114, lng: -9.1302 },
+    baixa: { name: 'Baixa', lat: 38.7107, lng: -9.1365 },
+    chiado: { name: 'Chiado', lat: 38.7108, lng: -9.1420 },
+    bairroalto: { name: 'Bairro Alto', lat: 38.7132, lng: -9.1452 },
+    principe: { name: 'Príncipe Real', lat: 38.7172, lng: -9.1490 },
+    belem: { name: 'Belém', lat: 38.6975, lng: -9.2060 },
+    lx: { name: 'Alcântara', lat: 38.7036, lng: -9.1784 },
+    cais: { name: 'Cais do Sodré', lat: 38.7066, lng: -9.1440 },
+    mouraria: { name: 'Mouraria', lat: 38.7156, lng: -9.1350 },
+    graca: { name: 'Graça', lat: 38.7172, lng: -9.1312 },
+    nacoes: { name: 'Parque das Nações', lat: 38.7680, lng: -9.0950 },
+    intendente: { name: 'Intendente', lat: 38.7215, lng: -9.1355 },
+    santos: { name: 'Santos', lat: 38.7078, lng: -9.1560 },
+    ourique: { name: 'Campo de Ourique', lat: 38.7178, lng: -9.1660 },
+    xabregas: { name: 'Marvila', lat: 38.7330, lng: -9.1040 },
+    sintra: { name: 'Sintra', lat: 38.7979, lng: -9.3888, away: '25 km north-west' },
+    cascais: { name: 'Cascais', lat: 38.6979, lng: -9.4215, away: '30 km west, on the coast' },
+    caparica: { name: 'Costa da Caparica', lat: 38.6414, lng: -9.2359, away: 'across the river, on the Atlantic' },
+  };
+  const VENUE = {
+    cafe: ['Café Andorinha', 'Pastelaria Sete Colinas', 'Café do Largo', 'Pastelaria Bica Doce', 'Café Azulejo', 'Leitaria Saudade'],
+    tasca: ['Tasca do Marinheiro', 'O Fado Velho', 'Casa da Sardinha', 'Tasca da Tia Rosa', 'A Gaivota Gulosa'],
+    fine: ['Mesa de Prata', 'Atelier Tejo', 'Sal & Lume'],
+    bar: ['Bar Lua Torta', 'Tasca dos Copos', 'O Esconderijo'],
+    rooftop: ['Terraço das Sete Colinas', 'Varanda Alta', 'Rooftop Sereia'],
+    fado: ['Casa de Fado Andorinha', 'Taberna da Guitarra', 'Adega da Saudade'],
+    shop: ['Livraria do Poço', 'Oficina das Letras'],
+    surf: ['Onda Boa Surf School', 'Maré Surf Camp'],
+    studio: ['Atelier Azul Cobalto', 'Oficina do Azulejo'],
+  };
+  const venue = (k) => pick(VENUE[k]);
+
+  // Lodging per night, by how much the clone likes to spend.
+  const STAYS = [
+    { max: 0.33, name: 'a bunk in a hostel in Mouraria', area: 'mouraria', cost: 26 },
+    { max: 0.66, name: 'a small guesthouse in Alfama', area: 'alfama', cost: 78 },
+    { max: 1.01, name: 'a boutique hotel in Príncipe Real', area: 'principe', cost: 175 },
+  ];
+
+  // Everything the clone can do. weights: how traits make it more (or less) appealing.
+  // slots: when it can happen. big: worthy of asking you about. spans: takes a whole day.
+  const ACTS = [
+    { id: 'nata', cat: 'food', slots: ['breakfast'], areas: ['baixa', 'chiado', 'belem', 'graca'], dur: [0.6, 1], cost: [3, 6], energy: 4,
+      title: (v) => `Pastel de nata and a bica at ${v}`, venue: 'cafe', weights: { foodie: 0.6 } },
+    { id: 'slowcoffee', cat: 'rest', slots: ['breakfast'], areas: ['principe', 'ourique', 'santos'], dur: [1, 1.6], cost: [5, 9], energy: 6,
+      title: (v) => `Slow coffee and people-watching at ${v}`, venue: 'cafe', weights: { adventure: -0.4, spontaneous: -0.2 } },
+    { id: 'sunrise', cat: 'nature', slots: ['breakfast'], areas: ['graca'], dur: [1, 1.4], cost: [0, 0], energy: -2, early: true,
+      title: () => 'Watched the sunrise from Miradouro da Senhora do Monte', weights: { nightOwl: -0.9, nature: 0.5 }, bucket: 'sunrise' },
+    { id: 'tram', cat: 'sight', slots: ['morning', 'afternoon'], areas: ['graca'], dur: [1.3, 2], cost: [3, 3], energy: -6,
+      title: () => 'Rode the old yellow Tram 28 through the hills', weights: { culture: 0.3 }, bucket: 'tram', big: true, short: 'ride Tram 28' },
+    { id: 'castle', cat: 'culture', slots: ['morning', 'afternoon'], areas: ['alfama'], dur: [2, 3], cost: [15, 15], energy: -12,
+      title: () => 'Walked the walls of São Jorge Castle', weights: { culture: 0.7 }, big: true, short: 'explore the castle' },
+    { id: 'belem', cat: 'culture', slots: ['morning', 'afternoon'], areas: ['belem'], dur: [3, 4], cost: [18, 24], energy: -18,
+      title: () => 'Belém: the river tower, the monastery and too many pastries', weights: { culture: 0.6, foodie: 0.2 }, big: true, short: 'spend the day in Belém' },
+    { id: 'tiles', cat: 'culture', slots: ['morning', 'afternoon'], areas: ['xabregas'], dur: [2, 2.5], cost: [8, 8], energy: -8,
+      title: () => 'Five centuries of blue tiles at the National Tile Museum', weights: { culture: 0.7, adventure: -0.2 } },
+    { id: 'tileclass', cat: 'culture', slots: ['afternoon'], areas: ['mouraria'], dur: [2.5, 3], cost: [45, 45], energy: -10,
+      title: (v) => `Painted my own azulejo at ${v}`, venue: 'studio', weights: { culture: 0.6, spontaneous: 0.2 }, bucket: 'tile', big: true, short: 'take a tile-painting class' },
+    { id: 'lx', cat: 'shopping', slots: ['afternoon'], areas: ['lx'], dur: [2, 3], cost: [10, 45], energy: -10,
+      title: () => 'Browsed bookshops and studios in an old factory in Alcântara', weights: { spender: 0.5, culture: 0.2 } },
+    { id: 'bookshop', cat: 'culture', slots: ['morning', 'afternoon'], areas: ['chiado'], dur: [1, 1.5], cost: [12, 20], energy: -3,
+      title: (v) => `Lost an hour in ${v}, an old bookshop in Chiado`, venue: 'shop', weights: { culture: 0.4, social: -0.3 } },
+    { id: 'river', cat: 'nature', slots: ['afternoon', 'sunset'], areas: ['cais', 'santos', 'lx'], dur: [1.5, 2.2], cost: [0, 0], energy: -8,
+      title: () => 'Walked along the river towards the red bridge', weights: { nature: 0.5, spender: -0.3 } },
+    { id: 'miradouro', cat: 'nature', slots: ['sunset'], areas: ['graca', 'alfama', 'bairroalto'], dur: [1, 1.5], cost: [0, 7], energy: -2,
+      title: () => 'Sunset over the red roofs from a miradouro', weights: { nature: 0.4 } },
+    { id: 'nap', cat: 'rest', slots: ['afternoon', 'sunset'], areas: ['_stay'], dur: [1.5, 2.5], cost: [0, 0], energy: 30, restful: true,
+      title: () => 'A long siesta with the shutters half open', weights: { adventure: -0.4 } },
+    { id: 'foodhall', cat: 'food', slots: ['lunch'], areas: ['cais'], dur: [1, 1.5], cost: [14, 22], energy: 6,
+      title: () => 'Lunch at a busy food hall by the river', weights: { foodie: 0.4, social: 0.2 } },
+    { id: 'bifana', cat: 'food', slots: ['lunch'], areas: ['baixa', 'mouraria', 'intendente'], dur: [0.6, 1], cost: [4, 7], energy: 6,
+      title: (v) => `A bifana and a cold beer at ${v}`, venue: 'cafe', weights: { spender: -0.6 } },
+    { id: 'pratododia', cat: 'food', slots: ['lunch'], areas: ['ourique', 'graca', 'santos'], dur: [1, 1.6], cost: [11, 16], energy: 6,
+      title: (v) => `Prato do dia at ${v}`, venue: 'tasca', weights: { foodie: 0.3 } },
+    { id: 'sardines', cat: 'food', slots: ['dinner'], areas: ['alfama', 'mouraria'], dur: [1.5, 2], cost: [16, 26], energy: 4,
+      title: (v) => `Grilled sardines and vinho verde at ${v}`, venue: 'tasca', weights: { foodie: 0.4, spender: -0.2 } },
+    { id: 'tasting', cat: 'food', slots: ['dinner'], areas: ['chiado', 'principe'], dur: [2.5, 3.5], cost: [95, 150], energy: 2,
+      title: (v) => `Twelve-course tasting menu at ${v}`, venue: 'fine', weights: { foodie: 0.8, spender: 0.9 }, bucket: 'tasting', big: true, short: 'book a tasting menu' },
+    { id: 'fado', cat: 'culture', slots: ['dinner', 'night'], areas: ['alfama', 'mouraria'], dur: [2.5, 3], cost: [28, 40], energy: -6,
+      title: (v) => `Fado night at ${v}`, venue: 'fado', weights: { culture: 0.6, nightOwl: 0.2 }, bucket: 'fado', big: true, short: 'hear live fado tonight' },
+    { id: 'rooftop', cat: 'nightlife', slots: ['sunset', 'night'], areas: ['bairroalto', 'principe', 'chiado'], dur: [1.5, 2.5], cost: [22, 38], energy: -8,
+      title: (v) => `Cocktails at ${v}`, venue: 'rooftop', weights: { spender: 0.5, social: 0.3 } },
+    { id: 'bairro', cat: 'nightlife', slots: ['night'], areas: ['bairroalto'], dur: [3, 5], cost: [18, 40], energy: -28,
+      title: () => 'Street party in Bairro Alto, plastic cups and strangers singing', weights: { social: 0.8, nightOwl: 0.8 }, bucket: 'dance', big: true, short: 'go out in Bairro Alto' },
+    { id: 'pinkstreet', cat: 'nightlife', slots: ['night'], areas: ['cais'], dur: [2.5, 4], cost: [20, 45], energy: -22,
+      title: (v) => `Late drinks at ${v} on the pink street`, venue: 'bar', weights: { social: 0.6, nightOwl: 0.7, spender: 0.2 } },
+    { id: 'surf', cat: 'adventure', slots: ['morning'], spans: ['morning', 'lunch', 'afternoon'], areas: ['caparica'], dur: [7, 8], cost: [55, 70], energy: -35,
+      title: (v) => `Surf lesson at ${v}, Costa da Caparica`, venue: 'surf', weights: { adventure: 0.9, nature: 0.4 }, bucket: 'surf', big: true, short: 'take a surf lesson on the Atlantic' },
+    { id: 'sintra', cat: 'adventure', slots: ['morning'], spans: ['morning', 'lunch', 'afternoon'], areas: ['sintra'], dur: [8, 9], cost: [32, 45], energy: -32,
+      title: () => 'Day trip to the palaces of Sintra, up in the mist', weights: { adventure: 0.5, culture: 0.5 }, bucket: 'sintra', big: true, short: 'go to Sintra for the day' },
+    { id: 'cascais', cat: 'nature', slots: ['morning'], spans: ['morning', 'lunch', 'afternoon'], areas: ['cascais'], dur: [7, 8], cost: [30, 45], energy: -24,
+      title: () => 'Train along the coast to Cascais: a cold Atlantic swim and seafood', weights: { nature: 0.7, adventure: 0.3 }, bucket: 'cascais', big: true, short: 'swim in the Atlantic at Cascais' },
+    { id: 'wander', cat: 'sight', slots: ['morning', 'afternoon'], areas: ['alfama', 'mouraria', 'graca'], dur: [1.5, 2.5], cost: [0, 0], energy: -8,
+      title: () => 'Got lost on purpose in the alleys, laundry overhead', weights: { spontaneous: 0.6, spender: -0.3 } },
+    { id: 'market', cat: 'food', slots: ['morning'], areas: ['ourique'], dur: [1.2, 1.8], cost: [6, 15], energy: -4,
+      title: () => 'Morning market: cheese, cherries and a chat with a fishmonger', weights: { foodie: 0.5, social: 0.2 } },
+    // Work: only when money runs low.
+    { id: 'work', cat: 'work', slots: ['morning', 'afternoon'], areas: ['baixa', 'chiado', 'cais'], dur: [5, 6], cost: [0, 0], earn: [45, 65], energy: -25, work: true,
+      title: (v) => `Shift behind the counter at ${v}`, venue: 'cafe', weights: {} },
+  ];
+  const ACT = Object.fromEntries(ACTS.map((a) => [a.id, a]));
+
+  const BUCKET = {
+    sunrise: 'Watch the sunrise from a miradouro',
+    tram: 'Ride Tram 28 through the old hills',
+    tile: 'Paint my own azulejo tile',
+    tasting: 'Eat a twelve-course tasting menu',
+    fado: 'Hear fado sung live in Alfama',
+    dance: 'Dance in the streets of Bairro Alto',
+    surf: 'Stand up on a surfboard',
+    sintra: 'See the palaces of Sintra',
+    cascais: 'Swim in the Atlantic',
+    friend: 'Make a friend from another country',
+  };
+
+  const OTHER_CLONES = [
+    ['Sofia', 'Barcelona'], ['Kenji', 'Osaka'], ['Amara', 'Lagos'], ['Lukas', 'Vienna'], ['Maya', 'Toronto'],
+    ['Tomás', 'Buenos Aires'], ['Ingrid', 'Bergen'], ['Priya', 'Pune'], ['Noah', 'Melbourne'], ['Léa', 'Lyon'],
+  ];
+
+  // =====================================================================
+  // Questionnaire → personality
+  // =====================================================================
+  const TRAITS = {
+    adventure: ['Comfort-seeker', 'Adventurer'],
+    social: ['Solo', 'Social'],
+    spender: ['Saver', 'Spender'],
+    foodie: ['Eats to live', 'Foodie'],
+    nightOwl: ['Early bird', 'Night owl'],
+    culture: ['Outdoorsy', 'Culture lover'],
+    nature: ['City person', 'Nature person'],
+    spontaneous: ['Planner', 'Spontaneous'],
+  };
+  const QUESTIONS = [
+    { q: 'A free Saturday. You…', a: [
+      ['Pack a bag and go somewhere new', { adventure: 0.25, spontaneous: 0.15 }],
+      ['Sleep in, coffee, a good book', { adventure: -0.25, social: -0.1 }],
+      ['Call friends and see what happens', { social: 0.25, spontaneous: 0.1 }]] },
+    { q: 'Dinner tonight?', a: [
+      ['Street food from a stall', { foodie: 0.1, spender: -0.2 }],
+      ['A long tasting menu', { foodie: 0.3, spender: 0.25 }],
+      ['Whatever is quickest', { foodie: -0.25 }]] },
+    { q: 'Midnight usually finds you…', a: [
+      ['On a dance floor', { nightOwl: 0.3, social: 0.15 }],
+      ['Fast asleep', { nightOwl: -0.3 }],
+      ['Deep in a long conversation', { nightOwl: 0.15, social: 0.1 }]] },
+    { q: 'You travel best with…', a: [
+      ['New people I meet on the way', { social: 0.3 }],
+      ['Just me', { social: -0.3 }]] },
+    { q: 'Museum or mountain?', a: [
+      ['Museum, obviously', { culture: 0.3, nature: -0.15 }],
+      ['Mountain, obviously', { nature: 0.3, culture: -0.1 }],
+      ['A bit of both', { culture: 0.1, nature: 0.1 }]] },
+    { q: 'Plans for a trip?', a: [
+      ['Every hour planned', { spontaneous: -0.3 }],
+      ['Wing it', { spontaneous: 0.3 }]] },
+    { q: 'Money on holiday:', a: [
+      ['Treat yourself, you only live once', { spender: 0.3 }],
+      ['Every euro counts', { spender: -0.3 }]] },
+    { q: 'The boldest thing you would try?', a: [
+      ['Surfing big waves', { adventure: 0.3, nature: 0.1 }],
+      ['Karaoke in front of strangers', { social: 0.2, adventure: 0.1 }],
+      ['Neither, thanks', { adventure: -0.2 }]] },
+  ];
+  const BUDGETS = [['Tight', 600], ['Comfortable', 1500], ['Lavish', 5000]];
+  const SPEEDS = [[3, '3× real feel'], [30, '30× fast'], [300, '300× preview']];
+
+  // =====================================================================
+  // Saving: per-person database row, or this browser as a fallback
+  // =====================================================================
+  const LOCAL_KEY = 'elsewhere-lisbon-v1';
+  let db = null, docRef = null;
+  const store = {
+    async load() {
+      if (docRef) {
+        try { const snap = await docRef.get(); if (snap.exists) return JSON.parse(snap.data().json); } catch (e) { /* fall back */ }
+      }
+      try { const raw = localStorage.getItem(LOCAL_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+    },
+    async save(c) {
+      const json = JSON.stringify(c);
+      try { localStorage.setItem(LOCAL_KEY, json); } catch (e) { /* storage unavailable */ }
+      if (docRef) { try { await docRef.set({ json, savedAt: Date.now() }); } catch (e) { /* keep local copy */ } }
+    },
+    async clear() {
+      try { localStorage.removeItem(LOCAL_KEY); } catch (e) { /* ignore */ }
+      if (docRef) { try { await docRef.delete(); } catch (e) { /* ignore */ } }
+    },
+  };
+  let saveTimer = null, dirty = false;
+  function markDirty() { dirty = true; }
+  async function flush() { if (dirty && clone) { dirty = false; await store.save(clone); } }
+
+  // =====================================================================
+  // The clone
+  // =====================================================================
+  let clone = null;
+
+  function newClone(name, traits, budget, speed) {
+    const stay = STAYS.find((s) => traits.spender < s.max);
+    const c = {
+      v: 1, name, traits, base: { ...traits }, budget, speed,
+      clock: { cloneEpoch: 8 * H, realEpoch: Date.now() },
+      money: budget, energy: 85, mood: 0.7,
+      stayArea: stay.area,
+      learned: {}, friends: {},
+      bucket: [], events: [], diaries: {}, question: null,
+      sim: { cursor: 8 * H, slot: 'arrive', day: 1, recent: [], lastDone: {}, lastTripDay: -9 },
+      helpAskedDay: 0, workUntilDay: 0,
+    };
+    // Bucket list: four wishes that fit the personality.
+    const scored = Object.keys(BUCKET).filter((k) => k !== 'friend').map((k) => {
+      const a = ACTS.find((x) => x.bucket === k);
+      return [k, affinity(c, a) + Math.random() * 0.3];
+    }).sort((x, y) => y[1] - x[1]);
+    c.bucket = scored.slice(0, 4).map(([k]) => ({ id: k, text: BUCKET[k], done: false }));
+    if (traits.social > 0.55) c.bucket.push({ id: 'friend', text: BUCKET.friend, done: false });
+    return c;
+  }
+
+  const cloneNow = (c) => c.clock.cloneEpoch + (Date.now() - c.clock.realEpoch) * c.speed;
+
+  function setSpeed(c, speed) {
+    c.clock = { cloneEpoch: cloneNow(c), realEpoch: Date.now() };
+    c.speed = speed;
+    markDirty();
+  }
+
+  // How much the clone is drawn to an activity: traits + what it learned from you.
+  function affinity(c, a) {
+    let s = 0;
+    for (const [k, w] of Object.entries(a.weights || {})) s += w * ((c.traits[k] ?? 0.5) - 0.5) * 2;
+    s += (c.learned[a.cat] || 0);
+    return s;
+  }
+
+  // =====================================================================
+  // Simulation: the clone lives slot by slot, on its own clock
+  // =====================================================================
+  const SLOT_ORDER = ['breakfast', 'morning', 'lunch', 'afternoon', 'sunset', 'dinner', 'night', 'sleep'];
+
+  function wakeHour(c) { return 6.6 + c.traits.nightOwl * 3.4 + rnd(-0.3, 0.3); }
+  function stayFor(c) {
+    if (c.money < 26) return { name: "a couch offered by a clone it met", area: c.stayArea, cost: 0, couch: true };
+    let s = STAYS.find((x) => c.traits.spender < x.max);
+    if (c.money < s.cost * 3) s = STAYS[0];
+    return s;
+  }
+
+  function addEvent(c, e) {
+    c.events.push(e);
+    if (c.events.length > 400) c.events.splice(0, c.events.length - 400);
+    markDirty();
+  }
+
+  function moodWord(m) { return m > 0.8 ? 'Glowing' : m > 0.62 ? 'Happy' : m > 0.45 ? 'Fine' : m > 0.3 ? 'Flat' : 'Low'; }
+
+  function chooseAct(c, slot, t) {
+    const day = dayOf(t);
+    const broke = c.money < 60;
+    // Work if money is low and you told it to (or it decided to).
+    if ((slot === 'morning' || slot === 'afternoon') && (day <= c.workUntilDay || (c.money < 35 && day > c.helpAskedDay + 1))) {
+      if (slot === 'morning' || Math.random() < 0.5) return { act: ACT.work, reason: 'work' };
+    }
+    // Your answer to today's question decides this slot.
+    const q = c.question;
+    if (q && q.kind === 'choice' && q.day === day && q.slot === slot) {
+      const chosenId = q.answer || q.options.slice().sort((x, y) => affinity(c, ACT[y]) - affinity(c, ACT[x]))[0];
+      const a = ACT[chosenId];
+      const by = q.answer ? 'you' : 'gut';
+      if (q.answer) c.learned[a.cat] = clamp((c.learned[a.cat] || 0) + 0.12, -0.6, 0.8);
+      c.question = null;
+      if (a.cost[0] <= c.money) return { act: a, reason: by };
+    }
+    const candidates = ACTS.filter((a) => !a.work && a.slots.includes(slot) && (!a.early || hourOf(t) < 8.5))
+      .filter((a) => a.cost[0] <= c.money - (broke ? 0 : 40))
+      .filter((a) => !(a.spans && !tripAllowed(c, day)))
+      .filter((a) => !(a.big && day - (c.sim.lastDone[a.id] ?? -9) < 4));
+    if (!candidates.length) return null;
+    let best = null, bestScore = -1e9;
+    for (const a of candidates) {
+      let s = 1 + affinity(c, a) + rnd(0, 0.9);
+      if (c.sim.recent.includes(a.id)) s -= a.big ? 2.5 : 1.2;
+      if ((c.sim.recentCats || []).includes(a.cat)) s -= 0.6;
+      if (broke) s -= a.cost[1] / 30;
+      if (a.restful) s += (50 - c.energy) / 25;
+      if (a.bucket && c.bucket.some((b) => b.id === a.bucket && !b.done)) s += 0.5;
+      if (s > bestScore) { bestScore = s; best = a; }
+    }
+    return { act: best, reason: 'self' };
+  }
+
+  // Day trips: never on arrival day, at most one every 3 days, and only with energy.
+  function tripAllowed(c, day) { return day > 1 && day - c.sim.lastTripDay >= 3 && c.energy >= 55; }
+
+  function placeFor(c, a) {
+    let areaId = pick(a.areas);
+    if (areaId === '_stay') areaId = c.stayArea;
+    const ar = AREAS[areaId];
+    return { area: areaId, lat: ar.lat + rnd(-0.0012, 0.0012), lng: ar.lng + rnd(-0.0015, 0.0015) };
+  }
+
+  function runAct(c, a, t, reason) {
+    const v = a.venue ? venue(a.venue) : null;
+    const dur = rnd(a.dur[0], a.dur[1]) * H;
+    let cost = Math.round(rnd(a.cost[0], a.cost[1]));
+    if (a.cost[1] > 0 && c.traits.spender > 0.7) cost = Math.round(cost * 1.15);
+    cost = Math.min(cost, Math.max(0, Math.floor(c.money)));
+    const earn = a.earn ? Math.round(rnd(a.earn[0], a.earn[1])) : 0;
+    const place = placeFor(c, a);
+    // How much it enjoyed it: personality, energy and luck.
+    let m = 0.55 + affinity(c, a) * 0.3 + rnd(-0.2, 0.22) - (c.energy < 20 ? 0.2 : 0);
+    if (a.work) m = 0.35 + rnd(0, 0.25) + (c.traits.social - 0.5) * 0.2;
+    m = clamp(m, 0.05, 1);
+    c.money = c.money - cost + earn;
+    c.energy = clamp(c.energy + a.energy, 0, 100);
+    c.mood = clamp(c.mood * 0.7 + m * 0.3, 0, 1);
+    // Organic growth: good experiences pull traits toward the activity.
+    for (const [k, w] of Object.entries(a.weights || {})) {
+      if (k in c.traits) c.traits[k] = clamp(c.traits[k] + Math.sign(w) * 0.012 * (m - 0.55), 0.02, 0.98);
+    }
+    c.sim.recent = [a.id, ...c.sim.recent].slice(0, 8);
+    c.sim.recentCats = [a.cat, ...(c.sim.recentCats || [])].slice(0, 2);
+    c.sim.lastDone[a.id] = dayOf(t);
+    if (a.spans) c.sim.lastTripDay = dayOf(t);
+    let ticked = null;
+    if (a.bucket) {
+      const b = c.bucket.find((x) => x.id === a.bucket && !x.done);
+      if (b && m > 0.55) { b.done = true; b.doneAt = t; ticked = b.text; }
+    }
+    const e = {
+      id: Math.random().toString(36).slice(2, 9), t, end: t + dur, act: a.id, cat: a.cat,
+      title: a.title(v), area: place.area, lat: place.lat, lng: place.lng,
+      cost, earn, mood: m, reason, ticked,
+      hl: !!ticked || m > 0.84 || (a.big && m > 0.7),
+    };
+    addEvent(c, e);
+    // Sometimes it meets another clone.
+    if (!a.work && !a.restful && Math.random() < 0.03 + c.traits.social * 0.08 && ['culture', 'nightlife', 'food', 'sight', 'adventure'].includes(a.cat)) {
+      meetClone(c, t + dur * 0.4, place);
+    }
+    return t + dur;
+  }
+
+  function meetClone(c, t, place) {
+    const known = Object.keys(c.friends);
+    const again = known.length && Math.random() < 0.45;
+    const [nm, city] = again ? (() => { const k = pick(known); return [k, c.friends[k].city]; })() : pick(OTHER_CLONES);
+    const f = c.friends[nm] || (c.friends[nm] = { city, meets: 0 });
+    f.meets += 1;
+    const text = f.meets === 1 ? `Met ${nm}'s clone, visiting from ${f.city}`
+      : f.meets === 2 ? `Ran into ${nm}'s clone again. Same table, same jokes`
+      : `${nm}'s clone and me: officially friends now`;
+    let ticked = null;
+    if (f.meets >= 2) {
+      const b = c.bucket.find((x) => x.id === 'friend' && !x.done);
+      if (b) { b.done = true; b.doneAt = t; ticked = b.text; }
+    }
+    c.mood = clamp(c.mood + 0.05, 0, 1);
+    addEvent(c, { id: Math.random().toString(36).slice(2, 9), t, end: t + 0.5 * H, act: 'meet', cat: 'social', title: text,
+      area: place.area, lat: place.lat, lng: place.lng, cost: 0, earn: 0, mood: 0.8, reason: 'self', hl: f.meets >= 2 || !!ticked, ticked, side: true, friend: nm });
+  }
+
+  // Now and then it hears about something new and adds it to the bucket list.
+  function discoverWish(c, t) {
+    const open = c.bucket.filter((b) => !b.done).length;
+    if (Math.random() > (open <= 1 ? 0.6 : 0.2)) return;
+    const fresh = Object.keys(BUCKET).filter((k) => !c.bucket.some((b) => b.id === k));
+    if (!fresh.length) return;
+    const k = pick(fresh);
+    c.bucket.push({ id: k, text: BUCKET[k], done: false, addedAt: t });
+    const ar = AREAS[c.stayArea];
+    addEvent(c, { id: Math.random().toString(36).slice(2, 9), t, end: t + 0.2 * H, act: 'wish', cat: 'note',
+      title: `Overheard someone talking about it at breakfast. New on my bucket list: ${BUCKET[k]}`,
+      area: c.stayArea, lat: ar.lat, lng: ar.lng, cost: 0, earn: 0, mood: c.mood, reason: 'self', hl: false, side: true });
+  }
+
+  function askQuestion(c, t) {
+    const day = dayOf(t);
+    // Out of money: ask for help (once every few days).
+    if (c.money < 50 && day > c.helpAskedDay + 2) {
+      c.helpAskedDay = day;
+      c.question = { kind: 'help', day, text: `I'm down to ${euro(c.money)}. Send me €200, or should I find work for a few days?`,
+        options: ['send', 'work'], labels: ['Send €200', 'Find work'], answer: null, deadline: t + 6 * H };
+      return;
+    }
+    if (c.question && c.question.kind === 'help') return;
+    // Otherwise: a choice between two big things for today.
+    const dayTrip = Math.random() < 0.5 && tripAllowed(c, day);
+    const pool = ACTS.filter((a) => a.big && day - (c.sim.lastDone[a.id] ?? -9) >= 4 && a.cost[0] <= c.money - 40 &&
+      (dayTrip ? !!a.spans : !a.spans && (a.slots.includes('afternoon') || a.slots.includes('dinner') || a.slots.includes('night'))));
+    if (pool.length < 2) { c.question = null; return; }
+    const sorted = pool.map((a) => [a, affinity(c, a) + Math.random()]).sort((x, y) => y[1] - x[1]);
+    const [a, b] = [sorted[0][0], sorted[1 + Math.floor(Math.random() * Math.min(2, sorted.length - 1))][0]];
+    const slotOf = (x) => x.spans ? 'morning' : x.slots.includes('afternoon') ? 'afternoon' : x.slots.includes('dinner') ? 'dinner' : 'night';
+    if (slotOf(a) !== slotOf(b)) { c.question = null; return; }
+    const slot = slotOf(a);
+    const deadlineHour = { morning: 9.5, afternoon: 14, dinner: 20, night: 22 }[slot];
+    c.question = { kind: 'choice', day, slot, text: `Today: should I ${a.short}, or ${b.short}?`,
+      options: [a.id, b.id], labels: [cap(a.short), cap(b.short)], answer: null, deadline: (day - 1) * DAY + deadlineHour * H };
+    markDirty();
+  }
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+  // Advance the simulation up to clone time `until`. Creates events whose start <= until.
+  function simulate(c, until) {
+    let guard = 0;
+    while (c.sim.cursor <= until && guard++ < 4000) {
+      const t = c.sim.cursor;
+      const s = c.sim.slot;
+      if (s === 'arrive') {
+        addEvent(c, { id: 'arrive', t, end: t + 1.2 * H, act: 'arrive', cat: 'travel', title: 'Landed in Lisbon. Warm wind, blue sky, a taxi into town',
+          area: 'airport', lat: AREAS.airport.lat, lng: AREAS.airport.lng, cost: 22, earn: 0, mood: 0.8, reason: 'self', hl: true });
+        c.money -= 22;
+        c.sim.cursor = t + 1.2 * H; c.sim.slot = 'morning'; c.sim.day = 1;
+        continue;
+      }
+      if (s === 'sleep') {
+        const stay = stayFor(c);
+        const wakeDay = hourOf(t) < 5 ? dayOf(t) : dayOf(t) + 1;
+        const wakeT = (wakeDay - 1) * DAY + wakeHour(c) * H;
+        const hours = (wakeT - t) / H;
+        c.money -= stay.cost;
+        c.energy = clamp(Math.max(c.energy, 25) + hours * 7, 0, 100);
+        const ar = AREAS[stay.area];
+        addEvent(c, { id: Math.random().toString(36).slice(2, 9), t, end: wakeT, act: 'sleep', cat: 'rest',
+          title: stay.couch ? `Slept on ${stay.name}` : `Night at ${stay.name}`, area: stay.area, lat: ar.lat, lng: ar.lng,
+          cost: stay.cost, earn: 0, mood: stay.couch ? 0.4 : 0.6, reason: 'self', hl: false, sleep: true });
+        c.sim.cursor = wakeT; c.sim.slot = 'breakfast'; c.sim.day = wakeDay;
+        for (const k of Object.keys(c.traits)) c.traits[k] += (c.base[k] - c.traits[k]) * 0.04;
+        discoverWish(c, wakeT);
+        askQuestion(c, wakeT);
+        continue;
+      }
+      // Skip slots a day trip already covered.
+      if (c.sim.skip && c.sim.skip.includes(s)) {
+        c.sim.slot = SLOT_ORDER[SLOT_ORDER.indexOf(s) + 1];
+        continue;
+      }
+      if (s === 'breakfast') c.sim.skip = null;
+      // Night out only for night owls with energy; otherwise bed.
+      if (s === 'night' && (c.energy < 30 || Math.random() > 0.2 + c.traits.nightOwl * 0.6 + c.traits.social * 0.2)) {
+        c.sim.slot = 'sleep';
+        continue;
+      }
+      const choice = chooseAct(c, s, t);
+      if (!choice || !choice.act) { c.sim.cursor = t + 0.5 * H; c.sim.slot = SLOT_ORDER[SLOT_ORDER.indexOf(s) + 1]; continue; }
+      c.sim.cursor = runAct(c, choice.act, t, choice.reason);
+      if (choice.act.spans) c.sim.skip = choice.act.spans;
+      c.sim.slot = SLOT_ORDER[SLOT_ORDER.indexOf(s) + 1];
+    }
+    // Expired questions: the clone decides without you (choice) or works (help).
+    const q = c.question;
+    if (q && q.answer == null && cloneNow(c) > q.deadline) {
+      if (q.kind === 'help') { c.workUntilDay = q.day + 2; c.question = null; noteYou(c, 'No reply, so I found a job pouring coffee for a few days.'); }
+    }
+  }
+
+  function noteYou(c, text) {
+    const t = cloneNow(c);
+    const last = [...c.events].reverse().find((e) => e.t <= t) || c.events[c.events.length - 1];
+    addEvent(c, { id: Math.random().toString(36).slice(2, 9), t, end: t + 0.2 * H, act: 'note', cat: 'note', title: text,
+      area: last.area, lat: last.lat, lng: last.lng, cost: 0, earn: 0, mood: c.mood, reason: 'self', hl: false, side: true });
+  }
+
+  function answer(c, i) {
+    const q = c.question;
+    if (!q || q.answer != null) return;
+    if (q.kind === 'help') {
+      if (q.options[i] === 'send') {
+        c.money += 200; c.mood = clamp(c.mood + 0.15, 0, 1);
+        noteYou(c, 'You sent me €200. Lifesaver. Back to being a tourist.');
+      } else {
+        c.workUntilDay = dayOf(cloneNow(c)) + 2;
+        c.traits.spender = clamp(c.traits.spender - 0.05, 0.02, 0.98);
+        noteYou(c, 'Fine. I asked around and found café shifts for the next few days.');
+      }
+      c.question = null;
+    } else {
+      q.answer = q.options[i];
+    }
+    markDirty(); render(true);
+  }
+
+  // Your reactions teach it what you like to read about.
+  function react(c, id, kind) {
+    const e = c.events.find((x) => x.id === id);
+    if (!e) return;
+    const prev = e.react;
+    e.react = prev === kind ? null : kind;
+    const delta = (k) => (k === 'love' ? 0.08 : k === 'meh' ? -0.06 : 0);
+    c.learned[e.cat] = clamp((c.learned[e.cat] || 0) - delta(prev) + delta(e.react), -0.6, 0.8);
+    markDirty(); render(true);
+  }
+
+  // =====================================================================
+  // AI writing (postcards and diary), only when you tap
+  // =====================================================================
+  let sample = null;
+  function persona(c) {
+    const words = Object.entries(c.traits).map(([k, v]) => v > 0.62 ? TRAITS[k][1].toLowerCase() : v < 0.38 ? TRAITS[k][0].toLowerCase() : null).filter(Boolean);
+    return `You write as the clone of a real person named ${c.name}: an AI copy of them, living its own life in Lisbon in a simulated world. ` +
+      `Personality: ${words.join(', ') || 'balanced'}. Current mood: ${moodWord(c.mood).toLowerCase()}. Energy ${Math.round(c.energy)}/100. Money left: ${euro(c.money)}. ` +
+      `Write to ${c.name} in the first person, warm and playful, with concrete sensory details and a little "you should have been here" envy. ` +
+      `Stick to the facts given. Café, restaurant and bar names are fictional: use only the ones given and never invent other businesses or brands. ` +
+      `Real neighbourhoods and public landmarks may be described in general terms. No hashtags, no emoji, plain text.`;
+  }
+  async function writePostcard(c, e, el) {
+    if (!sample) return;
+    el.className = 'postcard wait'; el.textContent = 'Writing your postcard…';
+    const prompt = `${persona(c)}\n\nWrite a postcard of 60 to 100 words about this moment.\n` +
+      `Day ${dayOf(e.t)}, ${hhmm(e.t)}, ${AREAS[e.area].name}: ${e.title}.` +
+      `${e.cost ? ` It cost ${euro(e.cost)}.` : ''}${e.earn ? ` It earned ${euro(e.earn)}.` : ''}` +
+      `${e.ticked ? ` This ticked off a bucket-list wish: "${e.ticked}".` : ''}` +
+      `${e.reason === 'you' ? ` ${c.name} chose this for the clone.` : ''} How it felt: ${moodWord(e.mood).toLowerCase()}.`;
+    try {
+      const { text } = await sample(prompt, { modelTier: 'quick', onText: ({ text }) => { el.className = 'postcard'; el.textContent = text; } });
+      e.postcard = text; el.className = 'postcard'; el.textContent = text; markDirty();
+    } catch (err) {
+      el.className = 'postcard wait';
+      el.textContent = err.code === 'not_granted' || err.code === 'sampling_disabled' ? 'Postcards need permission to use Claude on this page.'
+        : err.code === 'rate_limited' ? 'Too many postcards at once. Try again in a bit.' : 'The postcard got lost in the post. Try again.';
+      if (err.code === 'not_granted' || err.code === 'sampling_disabled') sample = null;
+    }
+  }
+  async function writeDiary(c, day, el, btn) {
+    if (!sample) return;
+    const evs = c.events.filter((e) => dayOf(e.t) === day && e.t <= cloneNow(c) && !e.sleep);
+    if (!evs.length) return;
+    btn.disabled = true;
+    el.hidden = false; el.className = 'postcard wait'; el.textContent = 'Writing today’s diary…';
+    const lines = evs.map((e) => `${hhmm(e.t)} ${AREAS[e.area].name}: ${e.title}${e.cost ? ` (${euro(e.cost)})` : ''}${e.earn ? ` (earned ${euro(e.earn)})` : ''}${e.react === 'love' ? ' [they loved hearing about this]' : ''}`).join('\n');
+    const prompt = `${persona(c)}\n\nWrite a diary entry of 120 to 170 words about day ${day} in Lisbon, ending with what the clone is looking forward to.\nWhat happened:\n${lines}`;
+    try {
+      const { text } = await sample(prompt, { modelTier: 'quick', cache: false, onText: ({ text }) => { el.className = 'postcard'; el.textContent = text; } });
+      c.diaries[day] = text; el.textContent = text; markDirty();
+    } catch (err) {
+      el.className = 'postcard wait';
+      el.textContent = err.code === 'not_granted' || err.code === 'sampling_disabled' ? 'The diary needs permission to use Claude on this page.' : 'The diary did not come through. Try again.';
+    } finally { btn.disabled = false; }
+  }
+
+  // =====================================================================
+  // Avatar (placeholder until realistic photos) and "photo" scenes
+  // =====================================================================
+  const AV = {
+    skin: ['#f6d3b3', '#e8b48f', '#c98e64', '#9a6440', '#6b4229'],
+    hairColor: ['#1f1a17', '#5b3a24', '#d9b26a', '#a5482a', '#a9a9a9'],
+    hair: [['short', 'Short'], ['long', 'Long'], ['curly', 'Curly'], ['bun', 'Bun'], ['buzz', 'Buzz']],
+    extra: [['none', 'Nothing'], ['glasses', 'Glasses'], ['shades', 'Sunglasses'], ['cap', 'Cap']],
+    shirt: ['#1f4fa3', '#f2b705', '#2e8b57', '#c2412d', '#2b2b2b'],
+  };
+  const DEFAULT_AV = { skin: 1, hair: 'short', hairColor: 1, extra: 'none', shirt: 0 };
+  let avSeq = 0;
+
+  // Returns SVG markup for a 100×100 avatar, to place inside any <svg> or <g>.
+  function avatarMarkup(a, bg) {
+    a = { ...DEFAULT_AV, ...(a || {}) };
+    const id = 'av' + (avSeq++);
+    const skin = AV.skin[a.skin], hc = AV.hairColor[a.hairColor], shirt = AV.shirt[a.shirt];
+    const back = a.hair === 'long' ? `<path d="M27 42 Q27 20 50 19 Q73 20 73 42 L76 84 L24 84 Z" fill="${hc}"/>` : '';
+    const top = {
+      short: `<path d="M29 44 Q28 18 50 17 Q72 18 71 44 Q67 30 50 29 Q33 30 29 44 Z" fill="${hc}"/>`,
+      long: `<path d="M29 46 Q28 18 50 17 Q72 18 71 46 Q66 29 50 28 Q34 29 29 46 Z" fill="${hc}"/>`,
+      curly: [[34, 26], [42, 20], [50, 18], [58, 20], [66, 26], [70, 35], [30, 35]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="8" fill="${hc}"/>`).join(''),
+      bun: `<circle cx="50" cy="13" r="8" fill="${hc}"/><path d="M29 42 Q28 19 50 18 Q72 19 71 42 Q66 29 50 28 Q34 29 29 42 Z" fill="${hc}"/>`,
+      buzz: `<path d="M30 38 Q30 21 50 20 Q70 21 70 38 Q65 29 50 28 Q35 29 30 38 Z" fill="${hc}" opacity="0.75"/>`,
+    }[a.hair];
+    const extra = {
+      none: '',
+      glasses: `<g fill="none" stroke="#1d1d1d" stroke-width="2"><circle cx="42" cy="46" r="6"/><circle cx="58" cy="46" r="6"/><path d="M48 46 L52 46"/></g>`,
+      shades: `<g fill="#1d1d1d"><rect x="34" y="41" width="14" height="9" rx="3"/><rect x="52" y="41" width="14" height="9" rx="3"/><rect x="47" y="43" width="6" height="2"/></g>`,
+      cap: `<path d="M28 36 Q30 16 50 16 Q70 16 72 36 Z" fill="#f2b705"/><path d="M60 34 Q78 33 84 38 L60 38 Z" fill="#d79d00"/>`,
+    }[a.extra];
+    const eyes = a.extra === 'shades' ? '' : `<circle cx="42" cy="46" r="2.3" fill="#1d1d1d"/><circle cx="58" cy="46" r="2.3" fill="#1d1d1d"/>`;
+    return `<defs><clipPath id="${id}"><circle cx="50" cy="50" r="48"/></clipPath></defs>` +
+      `<g clip-path="url(#${id})"><rect width="100" height="100" fill="${bg || '#dfe9f8'}"/>${back}` +
+      `<path d="M18 100 Q20 76 50 74 Q80 76 82 100 Z" fill="${shirt}"/><rect x="44" y="62" width="12" height="13" fill="${skin}"/>` +
+      `<ellipse cx="50" cy="45" rx="20" ry="23" fill="${skin}"/>${top}${eyes}` +
+      `<path d="M43 56 Q50 62 57 56" stroke="#7a3b2e" stroke-width="2.2" fill="none" stroke-linecap="round"/>` +
+      `<circle cx="38" cy="54" r="3" fill="#e88a7a" opacity="0.35"/><circle cx="62" cy="54" r="3" fill="#e88a7a" opacity="0.35"/>${extra}</g>` +
+      `<circle cx="50" cy="50" r="48" fill="none" stroke="#ffffff" stroke-width="3"/>`;
+  }
+  const avatarSvg = (a, label) => `<svg viewBox="0 0 100 100" role="img" aria-label="${esc(label || 'Avatar')}">${avatarMarkup(a)}</svg>`;
+
+  // A drawn "photo" of a moment: sky by time of day, a scene by activity, the avatar in front.
+  function scenePhoto(e, a) {
+    const h = hourOf(e.t);
+    const sky = h < 6 || h >= 21.5 ? ['#0f1b3d', '#2a3f73'] : h < 8 ? ['#f3a683', '#f7d9b5'] : h < 17 ? ['#6db6ea', '#d3ecfa']
+      : h < 19.5 ? ['#ee8459', '#f7c873'] : ['#3d3b73', '#d9775c'];
+    const night = h < 6 || h >= 21.5;
+    const id = 'sc' + (avSeq++);
+    const roofs = [0, 40, 78, 120, 165, 205, 250, 290].map((x, i) => `<rect x="${x}" y="${92 - (i % 3) * 10}" width="38" height="${60 + (i % 3) * 10}" fill="${['#e9dccb', '#f1c9a5', '#dfe7ef'][i % 3]}"/><path d="M${x - 2} ${92 - (i % 3) * 10} L${x + 19} ${80 - (i % 3) * 10} L${x + 40} ${92 - (i % 3) * 10} Z" fill="#c4613c"/>`).join('');
+    const river = `<rect y="150" width="320" height="50" fill="#2f78b0"/><path d="M0 158 Q40 152 80 158 T160 158 T240 158 T320 158" stroke="#9fd0f0" stroke-width="2" fill="none"/>`;
+    const byAct = {
+      tram: `${roofs}<rect x="150" y="112" width="120" height="44" rx="8" fill="#f2b705"/><rect x="160" y="120" width="22" height="16" fill="#cfe8f7"/><rect x="190" y="120" width="22" height="16" fill="#cfe8f7"/><rect x="220" y="120" width="22" height="16" fill="#cfe8f7"/><rect x="150" y="150" width="120" height="6" fill="#7a5a00"/><path d="M0 170 L320 160 L320 200 L0 200 Z" fill="#a39e94"/>`,
+      castle: `<path d="M0 200 L0 130 Q120 95 320 120 L320 200 Z" fill="#6a9a4f"/><path d="M90 128 h20 v-10 h10 v10 h20 v-10 h10 v10 h20 v-10 h10 v10 h20 v40 h-110 Z" fill="#a08f7c"/>`,
+      sintra: `<path d="M0 200 L0 120 Q160 60 320 110 L320 200 Z" fill="#4f7d3a"/><rect x="150" y="70" width="70" height="40" fill="#d8b04a"/><rect x="180" y="52" width="16" height="22" fill="#c2412d"/><circle cx="215" cy="66" r="10" fill="#e9dccb"/><rect x="0" y="0" width="320" height="200" fill="#ffffff" opacity="0.18"/>`,
+      surf: `<rect y="120" width="320" height="80" fill="#2f78b0"/><path d="M0 130 Q30 112 60 130 T120 130 T180 130 T240 130 T300 130 T360 130" stroke="#ffffff" stroke-width="5" fill="none"/><rect x="180" y="110" width="110" height="14" rx="7" fill="#f2b705" transform="rotate(-12 235 117)"/>`,
+      cascais: `<rect y="135" width="320" height="65" fill="#2f78b0"/><rect y="170" width="320" height="30" fill="#ead6a4"/><circle cx="270" cy="40" r="18" fill="#fff4c2"/>`,
+      belem: `${river}<rect x="190" y="70" width="40" height="80" fill="#e6dccd"/><rect x="198" y="56" width="24" height="16" fill="#e6dccd"/><path d="M196 56 L210 44 L224 56 Z" fill="#cbbfae"/>`,
+    };
+    const byCat = {
+      nature: `${roofs}${river}<path d="M200 150 L210 112 L290 112 L300 150" stroke="#c2412d" stroke-width="4" fill="none"/><path d="M210 112 L210 150 M290 112 L290 150" stroke="#c2412d" stroke-width="5"/>`,
+      culture: byAct.castle,
+      sight: roofs + '<path d="M0 160 L320 150 L320 200 L0 200 Z" fill="#a39e94"/>',
+      food: `<rect y="120" width="320" height="80" fill="#8a5a3b"/><ellipse cx="220" cy="150" rx="46" ry="16" fill="#ffffff"/><ellipse cx="220" cy="147" rx="28" ry="9" fill="${e.act === 'sardines' ? '#9aa4ad' : '#e6a64b'}"/><rect x="278" y="118" width="14" height="30" rx="3" fill="#cfe8f7" opacity="0.8"/>`,
+      nightlife: `<rect y="70" width="320" height="130" fill="#1b2240"/>${[20, 60, 100, 140, 180, 220, 260, 300].map((x, i) => `<circle cx="${x}" cy="${78 + (i % 2) * 6}" r="4" fill="#f7d36b"/>`).join('')}<path d="M0 78 Q160 96 320 78" stroke="#555" fill="none"/>`,
+      adventure: byAct.surf,
+      rest: `<rect x="150" y="30" width="140" height="110" fill="${sky[1]}" stroke="#7a5a3b" stroke-width="8"/><path d="M220 30 L220 140 M150 85 L290 85" stroke="#7a5a3b" stroke-width="5"/><rect y="150" width="320" height="50" fill="#e9dccb"/>`,
+      shopping: `${roofs}<rect x="160" y="110" width="140" height="60" fill="#5b3a24"/><rect x="170" y="118" width="120" height="44" fill="#f1c9a5"/>`,
+      work: `<rect y="125" width="320" height="75" fill="#6b4226"/><rect x="200" y="105" width="22" height="24" rx="4" fill="#ffffff"/><path d="M222 112 q10 0 10 8 q0 8 -10 8" stroke="#ffffff" stroke-width="3" fill="none"/>`,
+      social: `${roofs}<g transform="translate(200,92) scale(0.95)">${avatarMarkup({ skin: ((a?.skin ?? 1) + 2) % 5, hair: 'curly', hairColor: 3, extra: 'none', shirt: 2 }, '#f3e9da')}</g>`,
+      travel: `<rect y="150" width="320" height="50" fill="#9a9a9a"/><path d="M170 60 L280 50 L292 58 L180 72 Z M220 56 L200 30 L214 30 L240 54 Z M210 66 L196 86 L208 86 L228 64 Z" fill="#ffffff"/>`,
+      note: roofs,
+    };
+    const scene = byAct[e.act] || byCat[e.cat] || roofs;
+    const stars = night ? [[30, 20], [80, 40], [130, 15], [210, 30], [260, 18], [300, 45]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.6" fill="#ffffff"/>`).join('') : '';
+    return `<svg class="photo" viewBox="0 0 320 200" role="img" aria-label="Placeholder photo: ${esc(e.title)}">` +
+      `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient></defs>` +
+      `<rect width="320" height="200" fill="url(#${id})"/>${stars}${scene}` +
+      `<g transform="translate(14,96)">${avatarMarkup(a, sky[1])}</g>` +
+      `<rect x="222" y="178" width="92" height="16" rx="8" fill="#000000" opacity="0.35"/><text x="268" y="190" text-anchor="middle" font-size="10" fill="#ffffff" font-family="Manrope, sans-serif">AI clone · sketch</text></svg>`;
+  }
+
+  // =====================================================================
+  // Map
+  // =====================================================================
+  // Zoomed on central Lisbon; places outside (airport, day trips) are pinned to the edge.
+  const B = { minLat: 38.6930, maxLat: 38.7345, minLng: -9.1880, maxLng: -9.1180 };
+  // Label placement per neighbourhood: [dx, dy, anchor], hand-tuned so nothing overlaps.
+  const LABEL = { ourique: [-10, -14, 'middle'], principe: [0, -16, 'middle'], graca: [10, -6, 'start'], mouraria: [-10, 8, 'end'],
+    intendente: [10, 8, 'start'], bairroalto: [-10, -6, 'end'], chiado: [-10, 26, 'end'], baixa: [0, 34, 'middle'], alfama: [10, 10, 'start'],
+    cais: [0, 34, 'middle'], santos: [0, 34, 'middle'], lx: [10, -10, 'start'] };
+  const px = (lat, lng) => [((lng - B.minLng) / (B.maxLng - B.minLng)) * 1000, ((B.maxLat - lat) / (B.maxLat - B.minLat)) * 760];
+  const NORTH_BANK = [[38.6935, -9.222], [38.6958, -9.205], [38.7003, -9.186], [38.7034, -9.171], [38.7042, -9.156], [38.7058, -9.146], [38.7072, -9.135],
+    [38.7098, -9.124], [38.7158, -9.113], [38.7248, -9.105], [38.7398, -9.099], [38.7548, -9.093], [38.7780, -9.090]];
+  const SOUTH_BANK = [[38.682, -9.082], [38.684, -9.120], [38.6878, -9.145], [38.6888, -9.166], [38.6876, -9.190], [38.6855, -9.222]];
+  function drawMapBase() {
+    const svg = $('#map');
+    const pts = (arr) => arr.map(([la, ln]) => px(la, ln).map((v) => v.toFixed(1)).join(',')).join(' ');
+    const water = [...NORTH_BANK, [38.778, -9.082], ...SOUTH_BANK];
+    const [bx1, by1] = px(38.7040, -9.1770), [bx2, by2] = px(38.6862, -9.1730);
+    let labels = '';
+    for (const [id, a] of Object.entries(AREAS)) {
+      if (a.away || a.lat < B.minLat || a.lat > B.maxLat || a.lng < B.minLng || a.lng > B.maxLng) continue;
+      const [x, y] = px(a.lat, a.lng);
+      const [dx, dy, anchor] = LABEL[id] || [10, 8, 'start'];
+      labels += `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="6" fill="var(--muted)" opacity="0.7"/>` +
+        `<text x="${(x + dx).toFixed(0)}" y="${(y + dy).toFixed(0)}" text-anchor="${anchor}" font-size="28" fill="var(--muted)" font-family="Manrope, sans-serif">${esc(a.name)}</text>`;
+    }
+    const [tx, ty] = px(38.6990, -9.1520);
+    svg.innerHTML =
+      `<rect x="0" y="0" width="1000" height="760" fill="var(--land)"/>` +
+      `<polygon points="${pts(water)}" fill="var(--water)"/>` +
+      `<text x="${tx.toFixed(0)}" y="${ty.toFixed(0)}" font-size="34" font-style="italic" fill="var(--cobalt)" opacity="0.6" font-family="Instrument Serif, serif">Rio Tejo</text>` +
+      `<line x1="${bx1}" y1="${by1}" x2="${bx2}" y2="${by2}" stroke="var(--bad)" stroke-width="5" opacity="0.55"/>` +
+      labels +
+      `<polyline id="trail" fill="none" stroke="var(--tram)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>` +
+      `<g id="me"><circle class="pulse" r="34" fill="var(--cobalt)"/><g transform="translate(-30,-30) scale(0.6)">${avatarMarkup(clone && clone.avatar)}</g></g>`;
+  }
+  function edgePoint(lat, lng) {
+    // Project off-map places onto the map edge, toward their direction.
+    const cx = (B.minLat + B.maxLat) / 2, cy = (B.minLng + B.maxLng) / 2;
+    let [x, y] = px(lat, lng);
+    const [ox, oy] = px(cx, cy);
+    const dx = x - ox, dy = y - oy;
+    const k = Math.min((dx < 0 ? -ox + 24 : 1000 - ox - 24) / dx, (dy < 0 ? -oy + 24 : 760 - oy - 24) / dy);
+    return k < 1 ? [ox + dx * k, oy + dy * k] : [x, y];
+  }
+
+  // Where the clone is at clone time t (moving at the start of each activity).
+  function positionAt(c, t) {
+    const evs = c.events;
+    let i = evs.length - 1;
+    while (i > 0 && evs[i].t > t) i--;
+    const e = evs[i];
+    const prev = evs[i - 1] || e;
+    const travel = Math.min(0.6 * H, (e.end - e.t) * 0.25);
+    const k = clamp((t - e.t) / travel, 0, 1);
+    if (e.side) return { lat: e.lat, lng: e.lng, e };
+    return { lat: prev.lat + (e.lat - prev.lat) * k, lng: prev.lng + (e.lng - prev.lng) * k, e, moving: k < 1 && prev !== e };
+  }
+
+  // =====================================================================
+  // Rendering
+  // =====================================================================
+  let lastLogKey = '', tab = 'log', openPostcards = new Set();
+
+  function currentEvent(c, t) {
+    let cur = null;
+    for (const e of c.events) { if (e.t <= t && !e.side) cur = e; }
+    return cur;
+  }
+
+  function render(force) {
+    const c = clone; if (!c) return;
+    const t = cloneNow(c);
+    simulate(c, t);
+
+    $('#cloneName').textContent = c.name;
+    if (!$('#headAvatar').firstChild) $('#headAvatar').innerHTML = avatarSvg(c.avatar, `${c.name}'s clone`);
+    $('#dayLabel').textContent = `Day ${dayOf(t)} · Lisbon`;
+    $('#clockTime').textContent = hhmm(t);
+    $('#speedLabel').textContent = `${c.speed}× real time`;
+    $('#money').textContent = euro(c.money);
+    $('#money').style.color = c.money < 60 ? 'var(--bad)' : '';
+    $('#energyText').textContent = Math.round(c.energy);
+    $('#energyBar').style.width = c.energy + '%';
+    $('#moodText').textContent = moodWord(c.mood);
+    $('#moodBar').style.width = Math.round(c.mood * 100) + '%';
+
+    // Now
+    const cur = currentEvent(c, t);
+    if (cur) {
+      const pos = positionAt(c, t);
+      $('#nowWhat').textContent = pos.moving ? `On the way to ${AREAS[cur.area].name}` : cur.sleep ? cur.title.replace('Night at', 'Asleep at') : cur.title;
+      $('#nowWhere').textContent = `${AREAS[cur.area].name}${cur.cost ? ' · ' + euro(cur.cost) : ''}${cur.earn ? ' · earning ' + euro(cur.earn) : ''}`;
+      if ($('#nowPhoto').dataset.id !== cur.id) { $('#nowPhoto').dataset.id = cur.id; $('#nowPhoto').innerHTML = scenePhoto(cur, c.avatar); }
+      const pct = clamp((t - cur.t) / (cur.end - cur.t), 0, 1);
+      $('#nowBar').style.width = (pct * 100).toFixed(1) + '%';
+      $('#nowUntil').textContent = `until ${hhmm(cur.end)} · ${realDur(cur.end - t, c.speed)} real`;
+      // Map
+      const ar = AREAS[cur.area];
+      const off = ar.lat > B.maxLat || ar.lat < B.minLat || ar.lng > B.maxLng || ar.lng < B.minLng;
+      const away = ar.away || (off ? (ar.lng < B.minLng ? 'just off the map, to the west' : 'just off the map, to the north-east') : null);
+      const [x, y] = away && !pos.moving ? edgePoint(pos.lat, pos.lng) : edgePoint(pos.lat, pos.lng);
+      $('#me').setAttribute('transform', `translate(${x.toFixed(1)},${y.toFixed(1)})`);
+      $('#awayBadge').hidden = !away;
+      if (away) $('#awayBadge').textContent = `Away in ${AREAS[cur.area].name}, ${away}`;
+      const todays = c.events.filter((e) => dayOf(e.t) === dayOf(t) && e.t <= t && !e.side);
+      $('#trail').setAttribute('points', [...todays.map((e) => edgePoint(e.lat, e.lng)), [x, y]].map((p) => p.map((v) => v.toFixed(1)).join(',')).join(' '));
+    }
+
+    // Question
+    const q = c.question;
+    const qCard = $('#questionCard');
+    if (q && (q.answer == null || q.kind === 'choice')) {
+      qCard.hidden = false;
+      $('#questionLabel').textContent = q.kind === 'help' ? `${c.name}'s clone needs you` : `${c.name}'s clone asks`;
+      $('#questionText').textContent = q.text;
+      const opts = q.labels.map((l, i) => `<button class="opt" type="button" data-answer="${i}" aria-pressed="${q.answer === q.options[i]}" ${q.answer != null && q.kind === 'help' ? 'disabled' : ''}>${esc(l)}</button>`).join('');
+      if ($('#questionOptions').dataset.key !== opts) { $('#questionOptions').innerHTML = opts; $('#questionOptions').dataset.key = opts; }
+      const left = q.deadline - t;
+      $('#questionDeadline').textContent = q.answer != null ? 'Got it. Your clone will remember you picked this.'
+        : left > 0 ? `Answer within ${realDur(left, c.speed)} (clone time ${hhmm(q.deadline)}), or it decides on its own.` : 'It is deciding now…';
+    } else {
+      qCard.hidden = true;
+    }
+
+    // Log, bucket, personality
+    const key = c.events.filter((e) => e.t <= t).length + ':' + c.events.map((e) => (e.react || '') + (e.postcard ? 'p' : '')).join('') + ':' + tab + ':' + Object.keys(c.diaries).length;
+    if (force || key !== lastLogKey) { lastLogKey = key; renderLog(c, t); renderBucket(c); renderMe(c); }
+  }
+
+  function renderLog(c, t) {
+    const box = $('#tab-log');
+    const shown = c.events.filter((e) => e.t <= t);
+    const days = {};
+    for (const e of shown) (days[dayOf(e.t)] ||= []).push(e);
+    const dayNums = Object.keys(days).map(Number).sort((a, b) => b - a);
+    let html = '';
+    for (const d of dayNums) {
+      const evs = days[d].slice().reverse();
+      const spent = days[d].reduce((s, e) => s + (e.cost || 0), 0);
+      const earned = days[d].reduce((s, e) => s + (e.earn || 0), 0);
+      html += `<div class="card"><div class="day-head"><h2>Day ${d}</h2><span class="muted small mono">spent ${euro(spent)}${earned ? ` · earned ${euro(earned)}` : ''}</span></div>`;
+      if (sample) {
+        html += `<div><button class="btn ghost small" type="button" data-diary="${d}">${c.diaries[d] ? 'Rewrite' : 'Write'} the diary for this day</button></div>`;
+      }
+      html += `<div class="postcard" data-diary-out="${d}" ${c.diaries[d] ? '' : 'hidden'}>${c.diaries[d] ? esc(c.diaries[d]) : ''}</div><div>`;
+      for (const e of evs) {
+        const meta = [`<span>${esc(AREAS[e.area].name)}</span>`];
+        if (e.cost) meta.push(`<span class="cost">−${euro(e.cost)}</span>`);
+        if (e.earn) meta.push(`<span class="earn">+${euro(e.earn)}</span>`);
+        if (!e.sleep && e.cat !== 'note') meta.push(`<span>${moodWord(e.mood)}</span>`);
+        const why = e.reason === 'you' ? '<div class="note">You picked this one.</div>' : e.reason === 'gut' ? '<div class="note">No answer from you, so it followed its gut.</div>' : e.reason === 'work' ? '<div class="note">Money ran low, so it took a job.</div>' : '';
+        const tick = e.ticked ? `<div class="note" style="color:var(--good);font-style:normal;font-weight:700">✓ Bucket list: ${esc(e.ticked)}</div>` : '';
+        const canPost = sample && e.hl && !e.sleep;
+        const acts = (e.sleep || e.cat === 'note') ? '' : `<div class="acts">
+            <button class="react" type="button" data-react="love" data-id="${e.id}" aria-pressed="${e.react === 'love'}">Love this</button>
+            <button class="react" type="button" data-react="meh" data-id="${e.id}" aria-pressed="${e.react === 'meh'}">Meh</button>
+            ${canPost ? `<button class="react" type="button" data-post="${e.id}">${e.postcard ? 'Postcard' : 'Read postcard'}</button>` : ''}
+          </div>`;
+        const photo = (e.hl || e.act === 'meet') && !e.sleep ? scenePhoto(e, c.avatar) : '';
+        const pc = e.postcard && openPostcards.has(e.id) ? `<div class="postcard">${esc(e.postcard)}</div>` : `<div class="postcard" data-pc="${e.id}" hidden></div>`;
+        html += `<div class="entry ${e.hl ? 'hl' : ''}"><time>${hhmm(e.t)}</time><div><div class="t">${esc(e.title)}</div><div class="meta">${meta.join('')}</div>${why}${tick}${photo}${acts}${pc}</div></div>`;
+      }
+      html += '</div></div>';
+    }
+    box.innerHTML = html || '<div class="card"><p class="muted">The journal starts when your clone lands.</p></div>';
+  }
+
+  function renderBucket(c) {
+    const done = c.bucket.filter((b) => b.done).length;
+    $('#tab-bucket').innerHTML = `<h2>Bucket list</h2><p class="muted small">${done} of ${c.bucket.length} done. These grew out of its personality, so it goes after them on its own.</p><ul>` +
+      c.bucket.map((b) => `<li><span class="${b.done ? 'done' : 'muted'}">${b.done ? '✓' : '○'}</span><span>${esc(b.text)}${b.done ? ` <span class="muted small">· day ${dayOf(b.doneAt)}</span>` : ''}</span></li>`).join('') + '</ul>';
+  }
+
+  function renderMe(c) {
+    const friends = Object.entries(c.friends);
+    const likes = Object.entries(c.learned).filter(([, v]) => Math.abs(v) > 0.05).sort((a, b) => b[1] - a[1]);
+    $('#tab-me').innerHTML = `<h2>Who it is becoming</h2><p class="muted small">It started from your answers. Every experience, your choices and your reactions nudge it.</p>
+      <div class="traits">${Object.entries(TRAITS).map(([k, [lo, hi]]) => `<div class="trait"><span>${lo}</span><span class="bar"><i style="left:${(c.traits[k] * 100).toFixed(0)}%"></i></span><span>${hi}</span></div>`).join('')}</div>
+      <h3>Learned from you</h3><p class="small">${likes.length ? likes.map(([k, v]) => `${v > 0 ? 'More' : 'Less'} ${k}`).join(' · ') : 'Nothing yet. React to journal entries and answer its questions.'}</p>
+      <h3>Clones it has met</h3>${friends.length ? `<ul class="friends">${friends.map(([n, f]) => `<li><b>${esc(n)}</b> <span class="muted small">from ${esc(f.city)} · met ${f.meets}×</span></li>`).join('')}</ul>` : '<p class="small muted">None yet.</p>'}
+      <p class="muted small">Other clones are simulated in this test. Friends' real clones come later.</p>`;
+  }
+
+  // =====================================================================
+  // Setup flow
+  // =====================================================================
+  const setup = { step: 0, answers: [], name: '', budget: 1500, speed: 30, avatar: { ...DEFAULT_AV } };
+
+  function renderSetup() {
+    $('#setup').hidden = false; $('#game').hidden = true; $('#loading').hidden = true;
+    const total = QUESTIONS.length + 3;
+    $('#setupProgress').style.width = `${(setup.step / total) * 100}%`;
+    const body = $('#setupBody');
+    if (setup.step === 0 && setup.answers.length === 0 && !setup.started) {
+      $('#setupTitle').textContent = 'Make your clone';
+      body.innerHTML = `<div style="display:flex;flex-direction:column;gap:12px">
+        <p>Your clone is a copy of you that lives its own life in Lisbon: cafés, day trips, nights out, money running low. You can follow it live, read its journal, and nudge it. It grows from what it lives through and from what you like.</p>
+        <p class="muted small">Eight quick questions decide who it starts as.</p>
+        <button class="btn" type="button" id="beginBtn">Start</button></div>`;
+      $('#beginBtn').onclick = () => { setup.started = true; renderSetup(); };
+      return;
+    }
+    if (setup.step < QUESTIONS.length) {
+      const q = QUESTIONS[setup.step];
+      $('#setupTitle').textContent = q.q;
+      body.innerHTML = `<div class="q-options">${q.a.map(([l], i) => `<button class="opt" type="button" data-qa="${i}">${esc(l)}</button>`).join('')}</div>
+        <p class="muted small" style="margin-top:10px">Question ${setup.step + 1} of ${QUESTIONS.length}</p>`;
+      body.querySelectorAll('[data-qa]').forEach((b) => b.onclick = () => { setup.answers[setup.step] = Number(b.dataset.qa); setup.step++; renderSetup(); });
+      return;
+    }
+    if (setup.step === QUESTIONS.length) {
+      $('#setupTitle').textContent = 'Name and budget';
+      body.innerHTML = `<div style="display:flex;flex-direction:column;gap:14px">
+        <label for="nameIn">Your name (the clone writes to you)</label>
+        <input id="nameIn" type="text" maxlength="24" autocomplete="given-name" value="${esc(setup.name)}">
+        <div><p style="margin-bottom:8px">Starting budget</p><div class="chips">${BUDGETS.map(([l, v]) => `<button class="chip" type="button" data-budget="${v}" aria-pressed="${setup.budget === v}">${l} · ${euro(v)}</button>`).join('')}</div></div>
+        <div><p style="margin-bottom:8px">Test speed</p><div class="chips">${SPEEDS.map(([v, l]) => `<button class="chip" type="button" data-sp="${v}" aria-pressed="${setup.speed === v}">${l}</button>`).join('')}</div>
+        <p class="muted small" style="margin-top:6px">3× is the planned real feel: a Lisbon day passes in 8 real hours. Faster speeds are for testing.</p></div>
+        <button class="btn" type="button" id="nextBtn">Next</button></div>`;
+      body.querySelectorAll('[data-budget]').forEach((b) => b.onclick = () => { setup.name = $('#nameIn').value; setup.budget = Number(b.dataset.budget); renderSetup(); });
+      body.querySelectorAll('[data-sp]').forEach((b) => b.onclick = () => { setup.name = $('#nameIn').value; setup.speed = Number(b.dataset.sp); renderSetup(); });
+      $('#nextBtn').onclick = () => { setup.name = $('#nameIn').value.trim() || 'You'; setup.step++; renderSetup(); };
+      return;
+    }
+    if (setup.step === QUESTIONS.length + 1) {
+      const a = setup.avatar;
+      $('#setupTitle').textContent = 'What does it look like?';
+      const sw = (key, colors) => `<div class="swatches">${colors.map((col, i) => `<button class="swatch" type="button" data-av="${key}" data-v="${i}" style="background:${col}" aria-label="${key} ${i + 1}" aria-pressed="${a[key] === i}"></button>`).join('')}</div>`;
+      const ch = (key, list) => `<div class="chips">${list.map(([v, l]) => `<button class="chip" type="button" data-av="${key}" data-v="${v}" aria-pressed="${a[key] === v}">${l}</button>`).join('')}</div>`;
+      body.innerHTML = `<div style="display:flex;flex-direction:column;gap:14px">
+        <div class="av-preview">${avatarSvg(a, 'Your clone')}</div>
+        <p class="muted small">A simple avatar for now. Later this becomes a realistic look made from your own photos.</p>
+        <div><p style="margin-bottom:8px">Skin</p>${sw('skin', AV.skin)}</div>
+        <div><p style="margin-bottom:8px">Hair</p>${ch('hair', AV.hair)}</div>
+        <div><p style="margin-bottom:8px">Hair colour</p>${sw('hairColor', AV.hairColor)}</div>
+        <div><p style="margin-bottom:8px">Extra</p>${ch('extra', AV.extra)}</div>
+        <div><p style="margin-bottom:8px">Favourite shirt</p>${sw('shirt', AV.shirt)}</div>
+        <button class="btn" type="button" id="avNext">Next</button></div>`;
+      body.querySelectorAll('[data-av]').forEach((b) => b.onclick = () => {
+        const k = b.dataset.av;
+        a[k] = ['skin', 'hairColor', 'shirt'].includes(k) ? Number(b.dataset.v) : b.dataset.v;
+        renderSetup();
+      });
+      $('#avNext').onclick = () => { setup.step++; renderSetup(); };
+      return;
+    }
+    // Summary
+    const traits = traitsFromAnswers();
+    $('#setupTitle').textContent = `Meet ${setup.name}'s clone`;
+    body.innerHTML = `<div style="display:flex;flex-direction:column;gap:14px">
+      <div class="av-preview">${avatarSvg(setup.avatar, 'Your clone')}</div>
+      <div class="traits">${Object.entries(TRAITS).map(([k, [lo, hi]]) => `<div class="trait"><span>${lo}</span><span class="bar"><i style="left:${(traits[k] * 100).toFixed(0)}%"></i></span><span>${hi}</span></div>`).join('')}</div>
+      <p class="muted small">Budget ${euro(setup.budget)} · ${setup.speed}× real time · first stop: Lisbon</p>
+      <p class="muted small">Postcards and diary entries are written by Claude when you tap them. The first time, you'll be asked to allow that.</p>
+      <button class="btn" type="button" id="flyBtn">Send it to Lisbon</button>
+      <button class="btn ghost" type="button" id="backBtn">Change my answers</button></div>`;
+    $('#flyBtn').onclick = async () => {
+      clone = newClone(setup.name, traits, setup.budget, setup.speed);
+      clone.avatar = { ...setup.avatar };
+      markDirty(); await flush(); startGame();
+    };
+    $('#backBtn').onclick = () => { setup.step = 0; setup.answers = []; setup.started = true; renderSetup(); };
+    const editAv = document.createElement('button');
+    editAv.className = 'btn ghost'; editAv.type = 'button'; editAv.textContent = 'Change its look';
+    editAv.onclick = () => { setup.step = QUESTIONS.length + 1; renderSetup(); };
+    $('#backBtn').after(editAv);
+  }
+
+  function traitsFromAnswers() {
+    const t = Object.fromEntries(Object.keys(TRAITS).map((k) => [k, 0.5]));
+    setup.answers.forEach((ai, qi) => {
+      for (const [k, v] of Object.entries(QUESTIONS[qi].a[ai][1])) t[k] = clamp(t[k] + v, 0.05, 0.95);
+    });
+    return t;
+  }
+
+  // =====================================================================
+  // Game wiring
+  // =====================================================================
+  function startGame() {
+    $('#setup').hidden = true; $('#loading').hidden = true; $('#game').hidden = false;
+    $('#headAvatar').innerHTML = '';
+    drawMapBase();
+    $('#speedChips').innerHTML = SPEEDS.map(([v, l]) => `<button class="chip" type="button" data-speed="${v}" aria-pressed="${clone.speed === v}">${l}</button>`).join('');
+    $('#saveNote').textContent = docRef ? 'Saved to your account: your clone keeps living while this page is closed.'
+      : 'Saved in this browser: your clone keeps living while this page is closed.';
+    render(true);
+  }
+
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('button');
+    if (!b || !clone) return;
+    if (b.dataset.answer != null) answer(clone, Number(b.dataset.answer));
+    else if (b.dataset.react) react(clone, b.dataset.id, b.dataset.react);
+    else if (b.dataset.post) {
+      const e = clone.events.find((x) => x.id === b.dataset.post);
+      const el = document.querySelector(`[data-pc="${b.dataset.post}"]`);
+      if (!e) return;
+      if (e.postcard) { openPostcards.has(e.id) ? openPostcards.delete(e.id) : openPostcards.add(e.id); render(true); return; }
+      if (el) { el.hidden = false; openPostcards.add(e.id); writePostcard(clone, e, el); }
+    } else if (b.dataset.diary) {
+      const d = Number(b.dataset.diary);
+      writeDiary(clone, d, document.querySelector(`[data-diary-out="${d}"]`), b);
+    } else if (b.dataset.speed) {
+      setSpeed(clone, Number(b.dataset.speed));
+      document.querySelectorAll('[data-speed]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.speed === b.dataset.speed)));
+      render(true);
+    } else if (b.dataset.tab) {
+      tab = b.dataset.tab;
+      document.querySelectorAll('[data-tab]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+      $('#tab-log').hidden = tab !== 'log'; $('#tab-bucket').hidden = tab !== 'bucket'; $('#tab-me').hidden = tab !== 'me';
+    }
+  });
+
+  let resetArmed = false;
+  $('#resetBtn').addEventListener('click', async (e) => {
+    if (!resetArmed) {
+      resetArmed = true; e.target.textContent = 'Sure? Tap again to say goodbye to this clone';
+      setTimeout(() => { resetArmed = false; $('#resetBtn').textContent = 'Start over with a new clone'; }, 4000);
+      return;
+    }
+    await store.clear(); clone = null; dirty = false;
+    Object.assign(setup, { step: 0, answers: [], started: false, avatar: { ...DEFAULT_AV } });
+    renderSetup();
+  });
+
+  setInterval(() => { if (clone && !$('#game').hidden) render(false); }, 1000);
+  setInterval(flush, 15000);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
+  window.addEventListener('pagehide', () => { flush(); });
+
+  // =====================================================================
+  // Boot
+  // =====================================================================
+  async function boot() {
+    // Capabilities light up when available; the page works without them.
+    const [s, d, u] = await Promise.all([
+      window.claude?.use ? window.claude.use('sample').catch(() => null) : null,
+      window.claude?.use ? window.claude.use('db').catch(() => null) : null,
+      window.claude?.use ? window.claude.use('user').catch(() => null) : null,
+    ]);
+    sample = s;
+    if (d && u) {
+      try { const uid = await u.id(); if (uid) { db = d; docRef = d.doc(`data/users/${uid}/clone`); } } catch (e) { /* local only */ }
+    }
+    clone = await store.load();
+    if (clone && clone.v === 1) startGame(); else { clone = null; renderSetup(); }
+  }
+  boot();
+
+  // For testing.
+  window.__elsewhere = { get clone() { return clone; }, simulate, cloneNow, answer: (i) => answer(clone, i) };
+})();
+</script>
+</body>
+</html>
