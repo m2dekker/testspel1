@@ -89,7 +89,8 @@ player stays predictable.
   for the realistic look; it appears in the header, as the map marker, and in drawn
   "sketch" photos of each highlight
 - The clone lives in Lisbon on its own clock, also while the page is closed
-- Live map of central Lisbon with today's trail; day trips (Sintra, Cascais, Costa da
+- Live map of central Lisbon built from real OpenStreetMap data (streets, river,
+  parks, the 25 de Abril bridge; © OpenStreetMap contributors, ODbL) with today's trail; day trips (Sintra, Cascais, Costa da
   Caparica) are pinned to the map edge
 - Journal per day with spending, reactions, bucket-list ticks and clone meetings
 - One question a day, money trouble with a rescue question
@@ -98,7 +99,6 @@ player stays predictable.
 ## Open questions
 
 - How many AI photos per day are affordable (Hitchfield credits per image)?
-- Real map data: needs OpenStreetMap access (`overpass-api.de`) from the build environment
 - When does the clone leave Lisbon, and who decides where it goes next?
 - How do real friends' clones find each other (contacts, invite links, nearby)?
 - What exactly is free and what is paid?
