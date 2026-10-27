@@ -108,8 +108,8 @@
   .away { font-size: 13px; font-weight: 700; color: var(--tram-ink); background: var(--tram); border-radius: 999px; padding: 4px 10px; align-self: flex-start; }
   .question { border: 2px solid var(--cobalt); }
   .question .ask { font-family: var(--font-display); font-size: 24px; line-height: 1.2; }
-  .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); }
-  .tabs button { background: none; border: 0; padding: 10px 12px; font-weight: 700; color: var(--muted); border-bottom: 3px solid transparent; }
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .tabs button { background: none; border: 0; padding: 10px 10px; white-space: nowrap; font-weight: 700; color: var(--muted); border-bottom: 3px solid transparent; }
   .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--tram); }
   .day-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 6px; }
   .day-head h2 { font-size: 24px; }
@@ -142,6 +142,28 @@
   .voice { font-family: var(--font-display); font-size: 19px; line-height: 1.35; }
   .entry .voice { font-size: 17px; margin-top: 4px; }
   .story { margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: var(--cobalt-soft); font-size: 14px; }
+  .tabs .badge { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; border-radius: 9px; background: var(--bad); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+  .chat { padding: 0; gap: 0; overflow: hidden; }
+  .chat-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .chat-head svg { width: 40px; height: 40px; flex: none; }
+  .chat-head b { display: block; }
+  #chatLog { height: 420px; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 6px; background: var(--bg); }
+  .msg { max-width: 82%; padding: 8px 12px; border-radius: 16px; font-size: 15px; line-height: 1.35; overflow-wrap: anywhere; }
+  .msg time { display: block; font-size: 11px; opacity: 0.6; margin-top: 2px; text-align: right; font-family: var(--font-data); }
+  .msg.them { align-self: flex-start; background: var(--surface); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+  .msg.me { align-self: flex-end; background: var(--cobalt); color: var(--surface); border-bottom-right-radius: 4px; }
+  .msg .photo { margin: 0 0 6px; min-width: 200px; }
+  .msg.typing { display: flex; gap: 4px; padding: 12px 14px; }
+  .msg.typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: 0.5; }
+  @media (prefers-reduced-motion: no-preference) {
+    .msg.typing i { animation: blink 1.2s infinite; }
+    .msg.typing i:nth-child(2) { animation-delay: 0.2s; } .msg.typing i:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink { 50% { opacity: 1; } }
+  }
+  .chat-day { align-self: center; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 6px 0; }
+  .chat-sys { align-self: center; text-align: center; font-size: 13px; color: var(--muted); max-width: 90%; margin: 4px 0; }
+  .chat-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
+  .chat-form input { flex: 1; min-width: 0; }
   .plan { margin: 0; padding: 0; display: grid; gap: 2px; }
   .plan li { list-style: none; display: grid; grid-template-columns: 82px 1fr; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; }
   .plan li:first-child { border-top: 0; }
@@ -222,11 +244,17 @@
 
       <div class="tabs" role="tablist">
         <button role="tab" aria-selected="true" data-tab="log" type="button">Journal</button>
+        <button role="tab" aria-selected="false" data-tab="chat" type="button">Messages<span class="badge" id="chatBadge" hidden></span></button>
         <button role="tab" aria-selected="false" data-tab="bucket" type="button">Bucket list</button>
         <button role="tab" aria-selected="false" data-tab="me" type="button">Personality</button>
       </div>
 
       <div id="tab-log"></div>
+      <div id="tab-chat" class="card chat" hidden>
+        <div class="chat-head"><span id="chatAvatar"></span><div class="grow"><b id="chatName">Your clone</b><span class="muted small" id="chatStatus"></span></div></div>
+        <div id="chatLog" aria-live="polite"></div>
+        <form class="chat-form" id="chatForm"><input id="chatIn" type="text" maxlength="500" autocomplete="off" aria-label="Message"><button class="btn small" id="chatSend" type="submit">Send</button></form>
+      </div>
       <div id="tab-bucket" class="card bucket" hidden></div>
       <div id="tab-me" class="card" hidden></div>
 
@@ -617,6 +645,7 @@
       hl: !!ticked || m > 0.84 || (a.big && m > 0.7),
     };
     addEvent(c, e);
+    maybeTextFirst(c, e);
     // Sometimes it meets another clone.
     if (!a.work && !a.restful && Math.random() < 0.03 + c.traits.social * 0.08 && ['culture', 'nightlife', 'food', 'sight', 'adventure'].includes(a.cat)) {
       meetClone(c, t + dur * 0.4, place);
@@ -1010,7 +1039,7 @@ Reply with only JSON in this shape:
         }
         if (covered.has(s)) return '';
         if (!id || id === 'free') return i > reached ? `<li><span>${SLOT_NAME[s]}</span><span class="muted">${actLabel('free')}</span></li>` : '';
-        return `<li class="${i < reached ? 'skip' : ''}"><span>${SLOT_NAME[s]}</span><span>${esc(actLabel(id))}</span></li>`;
+        return `<li class="${i < reached ? 'skip' : ''}"><span>${SLOT_NAME[s]}</span><span>${esc(actLabel(id))}${p.asked === s ? ' <em class="muted">· you asked</em>' : ''}</span></li>`;
       }).join('') + '</ol>';
     } else {
       html += `<p class="muted small">No plan for today, so it follows its instincts.</p>`;
@@ -1021,6 +1050,162 @@ Reply with only JSON in this shape:
     else if (needsCheckIn(c)) html += `<button class="btn small" type="button" data-checkin="1">Check in with ${esc(c.name)}'s clone</button><p class="muted small">It plans the next days and writes up what happened. Uses Claude.</p>`;
     else if (p) html += `<p class="muted small">Planned by the clone itself (AI). It may change its mind if money or energy run low.</p>`;
     $('#planCard').innerHTML = html;
+  }
+
+  // =====================================================================
+  // Chat with your clone. It lives on its own clock: busy at the fado show,
+  // asleep at night, and it texts you first when something good happens.
+  // A reply is written when you send (that is the moment Claude is asked)
+  // and arrives when the clone would actually look at its phone.
+  // =====================================================================
+  const BUSY = new Set(['fado', 'tasting', 'surf', 'sintra', 'cascais', 'castle', 'belem', 'tileclass', 'bairro', 'pinkstreet', 'work', 'tram', 'nap', 'tiles']);
+  const FIRST_TEXTS = ['look where I ended up', 'ok you need to see this', 'wish you were here. actually no, I like having this to myself', 'not jealous yet?', 'this. right now.'];
+  const realAt = (c, t) => c.clock.realEpoch + (t - c.clock.cloneEpoch) / c.speed;
+  const chatSending = { busy: false };
+
+  function availability(c) {
+    const t = cloneNow(c), cur = currentEvent(c, t);
+    if (!cur) return { state: 'free' };
+    if (cur.sleep) return { state: 'asleep', until: cur.end };
+    if (BUSY.has(cur.act)) return { state: 'busy', until: cur.end, what: cur.title };
+    return { state: 'free', what: cur.title };
+  }
+
+  // Texting first: now and then a photo from a highlight, at most two a day.
+  function maybeTextFirst(c, e) {
+    if (ACT[e.act]?.work || e.sleep || !e.hl) return;
+    c.chat ||= [];
+    const day = dayOf(e.t);
+    if (c.chat.filter((m) => m.from === 'clone' && m.ev && dayOf(m.t) === day).length >= 2 || Math.random() > 0.65) return;
+    const t = e.t + (e.end - e.t) * rnd(0.3, 0.7);
+    c.chat.push({ id: Math.random().toString(36).slice(2, 9), from: 'clone', t, at: realAt(c, t), ev: e.id, text: pick(FIRST_TEXTS) });
+  }
+
+  function chatPrompt(c, av, t) {
+    const d = dayOf(t);
+    const today = c.events.filter((e) => dayOf(e.t) === d && e.t <= t && !e.sleep)
+      .map((e) => `${hhmm(e.t)} ${e.title}${e.line ? ` ("${e.line}")` : ''}`);
+    const plan = c.plans?.[d];
+    const slotNow = currentEvent(c, t)?.slot;
+    const later = PLAN_SLOTS.filter((s) => PLAN_SLOTS.indexOf(s) > PLAN_SLOTS.indexOf(slotNow || 'breakfast'));
+    const options = ACTS.filter((a) => !a.work && a.slots.some((s) => later.includes(s)) && !a.spans).map((a) => `${a.id} (${a.slots.filter((s) => later.includes(s)).join('/')}): ${actLabel(a.id)}`);
+    const history = c.chat.filter((m) => m.at <= Date.now() || m.from === 'you').slice(-20)
+      .map((m) => `${m.from === 'you' ? c.name : 'me'}: ${m.ev ? `[sent a photo: ${c.events.find((e) => e.id === m.ev)?.title || ''}] ` : ''}${m.text}`);
+    const when = av.state === 'asleep' ? `You are asleep. You will read this when you wake up around ${hhmm(av.until)} and answer then.`
+      : av.state === 'busy' ? `You are busy right now (${av.what}). You will answer when it is over, around ${hhmm(av.until)}.`
+      : `You are free right now (${av.what || 'between things'}), phone in hand.`;
+    return `${persona(c)}
+
+You are texting with ${c.name}, the real person you are a copy of. They know you are their clone living in Lisbon.
+Text like a close friend on WhatsApp: 1 to 3 short messages, each at most 25 words. Casual, lowercase is fine, an emoji only now and then, no hashtags.
+Mirror how ${c.name} writes. Have opinions; you may disagree or say no. Never sound like an assistant, never offer help, never say you are an AI model.
+If asked something you could not know, say so like a person would. Do not reveal private details about anyone.
+
+It is day ${d}, ${hhmm(t)}. ${when}
+Money ${euro(c.money)}, energy ${Math.round(c.energy)}/100, mood ${moodWord(c.mood).toLowerCase()}.
+Today so far:
+${today.join('\n') || 'nothing yet'}
+Plan for the rest of today: ${plan ? later.map((s) => `${s}: ${actLabel(plan.slots[s] || 'free')}`).join(', ') : 'no plan, going with the flow'}.
+Bucket list still open: ${c.bucket.filter((b) => !b.done).map((b) => b.text).join('; ') || 'nothing'}.
+Things you remember about ${c.name}: ${(c.memory || []).join('; ') || 'nothing special yet'}.
+
+If ${c.name} suggests doing something later today, decide in character. If you agree, set "plan_change" to {"slot": "...", "id": "..."} using one of:
+${options.join('\n') || '(nothing left today)'}
+
+Conversation (latest last):
+${history.join('\n')}
+
+Reply with only JSON: {"messages": ["..."], "remember": "one short new fact about ${c.name} worth remembering, or null", "plan_change": null}`;
+  }
+
+  async function sendChat(c, text) {
+    text = text.trim().slice(0, 500);
+    if (!text) return;
+    c.chat ||= [];
+    const t = cloneNow(c);
+    c.chat.push({ id: Math.random().toString(36).slice(2, 9), from: 'you', t, at: Date.now(), text });
+    // A newer message replaces a reply that has not arrived yet: it answers everything at once.
+    const waiting = c.chat.filter((m) => m.from === 'clone' && m.reply && m.at > Date.now());
+    const keepAt = waiting.length ? Math.min(...waiting.map((m) => m.at)) : null;
+    c.chat = c.chat.filter((m) => !waiting.includes(m));
+    markDirty(); renderChat(c, true);
+    if (!sample) return;
+    const av = availability(c);
+    chatSending.busy = true; renderChat(c, true);
+    try {
+      const data = await sample.json(chatPrompt(c, av, t), { modelTier: 'quick', cache: false });
+      const msgs = (Array.isArray(data?.messages) ? data.messages : []).filter((m) => typeof m === 'string' && m.trim()).slice(0, 3);
+      if (!msgs.length) throw { code: 'empty' };
+      const now = Date.now();
+      let at = keepAt || (av.until ? Math.min(realAt(c, av.until), now + (av.state === 'asleep' ? 3 * H : 25 * 60e3)) : now + rnd(4, 25) * 1000);
+      at = Math.max(at, now + 3000);
+      msgs.forEach((m, i) => {
+        const when = at + i * rnd(2.5, 6) * 1000;
+        c.chat.push({ id: Math.random().toString(36).slice(2, 9), from: 'clone', reply: true, t: c.clock.cloneEpoch + (when - c.clock.realEpoch) * c.speed, at: when, text: m.trim().slice(0, 300) });
+      });
+      if (typeof data.remember === 'string' && data.remember.trim() && data.remember !== 'null') {
+        c.memory = [...(c.memory || []), data.remember.trim().slice(0, 140)].slice(-20);
+      }
+      const pc = data.plan_change;
+      if (pc && typeof pc === 'object' && ACT[pc.id] && !ACT[pc.id].work && !ACT[pc.id].spans && PLAN_SLOTS.includes(pc.slot) && ACT[pc.id].slots.includes(pc.slot)) {
+        const d = dayOf(t);
+        c.plans ||= {};
+        c.plans[d] ||= { intro: '', slots: {}, question: null, at: t };
+        c.plans[d].slots[pc.slot] = pc.id;
+        c.plans[d].at = t;
+        c.plans[d].asked = pc.slot;
+      }
+    } catch (err) {
+      if (AI_OFF.includes(err?.code)) sample = null;
+      c.chat.push({ id: Math.random().toString(36).slice(2, 9), from: 'sys', t, at: Date.now(),
+        text: err?.code === 'rate_limited' ? 'Not delivered: Claude is busy for you right now. Try again in a bit.' : AI_OFF.includes(err?.code) ? 'Chat needs Claude allowed on this page.' : 'Not delivered. Try sending again.' });
+    } finally {
+      chatSending.busy = false;
+      markDirty(); renderChat(c, true); flush();
+    }
+  }
+
+  function chatStatus(c) {
+    const av = availability(c);
+    const t = cloneNow(c);
+    if (av.state === 'asleep') return `Asleep · usually up around ${hhmm(av.until)} (${realDur(av.until - t, c.speed)} real)`;
+    if (av.state === 'busy') return `Busy: ${av.what.replace(/ at .*/, '')} · free around ${hhmm(av.until)}`;
+    return 'Online';
+  }
+
+  let lastChatKey = '';
+  function renderChat(c, force) {
+    c.chat ||= [];
+    const now = Date.now();
+    const shown = c.chat.filter((m) => m.at <= now);
+    const next = c.chat.filter((m) => m.at > now && m.from === 'clone').sort((a, b) => a.at - b.at)[0];
+    const typing = chatSending.busy ? 'sending' : next && next.at - now < 5000 ? 'typing' : next ? 'waiting' : '';
+    const unread = shown.filter((m) => m.from === 'clone').length - (c.chatSeen || 0);
+    if (tab === 'chat' && unread > 0) { c.chatSeen = shown.filter((m) => m.from === 'clone').length; markDirty(); }
+    $('#chatBadge').textContent = tab !== 'chat' && unread > 0 ? String(unread) : '';
+    $('#chatBadge').hidden = !(tab !== 'chat' && unread > 0);
+    const key = shown.length + '|' + typing + '|' + chatStatus(c) + '|' + !!sample + '|' + shown.map((m) => m.ev ? (c.events.find((e) => e.id === m.ev)?.line ? 'l' : '') : '').join('');
+    if (!force && key === lastChatKey) return;
+    lastChatKey = key;
+    $('#chatStatus').textContent = chatStatus(c);
+    let html = '', lastDay = 0;
+    for (const m of shown) {
+      const d = dayOf(m.t);
+      if (d !== lastDay) { html += `<div class="chat-day">Day ${d}</div>`; lastDay = d; }
+      if (m.from === 'sys') { html += `<div class="chat-sys">${esc(m.text)}</div>`; continue; }
+      const e = m.ev && c.events.find((x) => x.id === m.ev);
+      const body = e ? `${scenePhoto(e, c.avatar)}<div>${esc(e.line || m.text)}</div>` : esc(m.text);
+      html += `<div class="msg ${m.from === 'you' ? 'me' : 'them'}">${body}<time>${hhmm(m.t)}</time></div>`;
+    }
+    if (typing === 'typing' || typing === 'sending') html += `<div class="msg them typing" aria-label="typing"><i></i><i></i><i></i></div>`;
+    else if (typing === 'waiting') html += `<div class="chat-sys">Seen. ${esc(c.name)}'s clone will answer when it can (~${realDur(Math.max(0, next.at - now) * c.speed, c.speed)} real).</div>`;
+    if (!shown.length && !typing) html = `<div class="chat-sys">Say hi. It answers like it would: right away when it's free, later when it's busy or asleep.</div>`;
+    const box = $('#chatLog');
+    const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+    box.innerHTML = html;
+    if (atBottom || force) box.scrollTop = box.scrollHeight;
+    $('#chatIn').disabled = !sample; $('#chatSend').disabled = !sample;
+    $('#chatIn').placeholder = sample ? `Message ${c.name}'s clone` : 'Chat needs Claude allowed on this page';
   }
 
   // =====================================================================
@@ -1237,6 +1422,8 @@ Reply with only JSON in this shape:
       qCard.hidden = true;
     }
 
+    renderChat(c, false);
+
     // Today's plan
     const pk = planKey(c, t);
     if (force || pk !== lastPlanKey) { lastPlanKey = pk; renderPlan(c, t); }
@@ -1406,6 +1593,9 @@ Reply with only JSON in this shape:
     $('#saveNote').textContent = docRef ? 'Saved to your account: your clone keeps living while this page is closed.'
       : 'Saved in this browser: your clone keeps living while this page is closed.';
     clone.plans ||= {};
+    clone.chat ||= [];
+    $('#chatAvatar').innerHTML = avatarSvg(clone.avatar, `${clone.name}'s clone`);
+    $('#chatName').textContent = `${clone.name}'s clone`;
     render(true);
     // One automatic check-in per page load (on opening, or right after sending it off).
     if (sample && !checkIn.autoUsed && needsCheckIn(clone)) { checkIn.autoUsed = true; runCheckIn(clone); }
@@ -1433,8 +1623,17 @@ Reply with only JSON in this shape:
     } else if (b.dataset.tab) {
       tab = b.dataset.tab;
       document.querySelectorAll('[data-tab]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
-      $('#tab-log').hidden = tab !== 'log'; $('#tab-bucket').hidden = tab !== 'bucket'; $('#tab-me').hidden = tab !== 'me';
+      $('#tab-log').hidden = tab !== 'log'; $('#tab-bucket').hidden = tab !== 'bucket'; $('#tab-me').hidden = tab !== 'me'; $('#tab-chat').hidden = tab !== 'chat';
+      if (tab === 'chat') renderChat(clone, true);
     }
+  });
+
+  $('#chatForm').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    if (!clone || chatSending.busy) return;
+    const text = $('#chatIn').value;
+    $('#chatIn').value = '';
+    sendChat(clone, text);
   });
 
   let resetArmed = false;
@@ -1474,7 +1673,7 @@ Reply with only JSON in this shape:
   boot();
 
   // For testing.
-  window.__elsewhere = { get clone() { return clone; }, simulate, cloneNow, answer: (i) => answer(clone, i), checkIn: () => runCheckIn(clone), needsCheckIn: () => needsCheckIn(clone) };
+  window.__elsewhere = { sendChat: (x) => sendChat(clone, x), availability: () => availability(clone), get clone() { return clone; }, simulate, cloneNow, answer: (i) => answer(clone, i), checkIn: () => runCheckIn(clone), needsCheckIn: () => needsCheckIn(clone) };
 })();
 </script>
 

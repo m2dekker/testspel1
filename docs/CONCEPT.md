@@ -13,6 +13,19 @@ Inspiration: *Tabi Kaeru* (Travel Frog, 2018), a hugely popular game where a fro
 travels without you and sends postcards. Elsewhere is that idea with AI, and with
 *you* as the traveller.
 
+## Direction (after the first test)
+
+The first prototype worked but did not wow: it felt like reading a spreadsheet about a
+cartoon. The wow is **seeing yourself somewhere you wish you were**. So:
+
+- **Photo-first.** The core of the app is one or two realistic photo moments a day of
+  *you*, somewhere great, each with one line in your voice, arriving as a notification.
+  One tap: react, answer, share. Map, money and plans move to a second screen.
+- **Weekly highlight reel** (short video), ready to share: free marketing.
+- **Less to manage, more to discover.** Open, smile, close. One surprise a day.
+- **Dream destinations,** not only Lisbon: Tokyo, Amalfi, Iceland, Bali.
+- **The AI planning engine stays** and decides which moments deserve a photo.
+
 ## Decisions so far
 
 | Topic | Decision |
@@ -25,9 +38,11 @@ travels without you and sends postcards. Elsewhere is that idea with AI, and wit
 | Growth | Learns from its own experiences, your answers to its questions, and your reactions |
 | Control | Nudges, not commands: answer its questions, react to its journal, suggest ideas, top up its money |
 | Money | Virtual money only. It can run out; then it downgrades, finds work, or asks you for help |
-| Other clones | Clones can meet anyone's clone, but **only clones talk to each other**, fully automatically. People never type messages to each other. |
+| Other clones | Clones can meet anyone's clone and talk automatically. People never type messages to each other. |
+| Chat | **You can chat with your own clone** (paid tiers). Other people chatting with your clone: maybe later, only opt-in, approved friends only, never minors. |
 | Look | **Realistic**, made with Hitchfield from your own photos |
-| Business model | Paid unlock and/or subscription, cosmetics, and possibly sponsored (clearly labeled) places |
+| Business model | Free tier, subscription tiers, one-off purchases (drops, tickets, pocket money, prints) and partner places. See below. |
+| Real businesses | Invented by default. **Real only with the partner's permission** (hotels, tourism boards), always labeled "Partner". |
 
 ## How the clone lives
 
@@ -81,6 +96,49 @@ is closed (at 3×, three clone days is about a real day).
 **Cost rule:** AI runs at moments that matter, never continuously, so the cost per
 player stays predictable.
 
+## Chat with your clone
+
+It has to feel human. That is mostly behaviour, not clever text:
+
+- **Not always available.** At the fado show it answers 40 minutes later; at 3am Lisbon
+  time it is asleep and answers in the morning. It lives on its own clock.
+- **It texts first,** sometimes with a photo: "look where I ended up".
+- **Writes like a person:** short messages, sometimes two in a row, moods that show,
+  and over time your own way of writing.
+- **Remembers:** what you told it, what you chose for it, what it did.
+- **Has opinions and can say no:** "Cascais again? No. Sintra, come on."
+- **Later: voice notes in your own voice** (voice clone from a sample).
+- Never pretends to be the real you to anyone else; never shares personal details.
+
+Unavailability also keeps costs down: fewer messages, and each feels more valuable.
+
+## Money: how people pay
+
+People pay for things about themselves (AI photo apps sold millions of photo packs),
+for status and for scarcity.
+
+| What | How it feels | Price idea |
+|---|---|---|
+| **Free** | One clone, one city, one photo moment a day, a few messages | €0 |
+| **Explorer** | Chat, 3 moments a day, all normal destinations | ~€6.99 / month |
+| **Jet-set** | Voice notes, video moments, early access to drops, outfits, two trips at once | ~€14.99 / month |
+| **Plane tickets** | "Send your clone to Tokyo." Each new destination | €2.99–4.99 |
+| **Drops** | Limited places others can't go: "only 500 clones on the Antarctic expedition", backstage at a festival, a night in a lighthouse, the moon, 1920s Paris. Ticket number, badge, rare photos. Sold out is gone. | €4.99–19.99 |
+| **Pocket money** | It's broke and asks: "Send €200" | €0.99 |
+| **Real postcards** | A printed postcard of its best moment, mailed to you | €3–5 |
+| **Clones together** | Your clone meets a friend's clone: a photo of the two of you | Growth (invites) |
+
+**Partners (B2B):**
+- **Hotels** pay to be a destination: thousands see a realistic photo of *themselves* at
+  that rooftop pool. Labeled "Partner".
+- **"Your clone loved it here. Book it for real?"** Commission on real bookings
+  (one booking can earn more than a month of subscription). Pitch: *try before you travel*.
+- **Tourism boards** (Visit Portugal, Visit Japan) sponsor destinations and drops.
+
+**Costs:** text (planning, journal, chat) is cheap. Realistic images and video are the
+expensive part, so tiers mostly decide how many pictures you get. Measured in the photo
+test: about 0.12 Higgsfield credits per realistic image (Soul 2.0, 1.5k).
+
 ## Social media and safety
 
 - **Selfie check at sign-up:** only your own face can become your clone. Prevents cloning
@@ -111,9 +169,17 @@ player stays predictable.
 - AI check-in (Claude) when you open it: plans the next days (shown as "Today's plan"),
   writes journal lines in its voice and stories of clone meetings; a button when a new
   check-in is due while the page stays open
+- **Messages:** chat with your clone. Busy at the fado show or asleep at night, it answers
+  later; it texts first with a photo from a highlight; it remembers things about you; if
+  you suggest something for tonight it may agree and change its plan, or refuse
 - AI-written postcards and diary entries (on tap)
 
 ## Open questions
+
+- Does the photo test give the wow? (Show 5 friends: do they ask "how much?")
+- Which hotel or tourism board would try a first partnership?
+- Is chat good enough to pay for? Message limits per tier?
+- Drops: how scarce, how often, and how to keep it fair?
 
 - How many AI photos per day are affordable (Hitchfield credits per image)?
 - When does the clone leave Lisbon, and who decides where it goes next?
