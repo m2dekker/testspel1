@@ -138,7 +138,10 @@ for status and for scarcity.
 **Costs:** text (planning, journal, chat) is cheap. Realistic images and video are the
 expensive part, so tiers mostly decide how many pictures you get. Photo test (Higgsfield,
 free plan): Soul 2.0 costs about 0.12 credits per image but turned "same person in a new
-scene" into plain headshots; Nano Banana 2.1 (1.5 credits) does keep the scene. The best
+scene" into plain headshots; Nano Banana 2.1 (1.5 credits) does keep the scene **and the
+face**: café breakfast, Pena Palace in Sintra, sunset at a miradouro and a fado night all
+look like real phone photos of the same person. This is the wow. Used as reference: the
+first good photo, then every new moment refers to it. The best
 general model (GPT Image 2.5, 0.25 credits) needs a paid plan. Free plan: one image at a time.
 
 ## Social media and safety
