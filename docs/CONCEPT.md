@@ -136,8 +136,10 @@ for status and for scarcity.
 - **Tourism boards** (Visit Portugal, Visit Japan) sponsor destinations and drops.
 
 **Costs:** text (planning, journal, chat) is cheap. Realistic images and video are the
-expensive part, so tiers mostly decide how many pictures you get. Measured in the photo
-test: about 0.12 Higgsfield credits per realistic image (Soul 2.0, 1.5k).
+expensive part, so tiers mostly decide how many pictures you get. Photo test (Higgsfield,
+free plan): Soul 2.0 costs about 0.12 credits per image but turned "same person in a new
+scene" into plain headshots; Nano Banana 2.1 (1.5 credits) does keep the scene. The best
+general model (GPT Image 2.5, 0.25 credits) needs a paid plan. Free plan: one image at a time.
 
 ## Social media and safety
 
